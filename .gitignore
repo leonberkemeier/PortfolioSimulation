@@ -1,0 +1,86 @@
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv
+env.bak/
+venv.bak/
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Node (for frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+.next/
+out/
+
+# OS
+.DS_Store
+.env.local
+.env.*.local
+Thumbs.db
+
+# Project specific
+trading_simulator.db
+.cache/
+temp/
+tmp/
+
+# Documentation (optional - comment out if you want to track .md files)
+# *.md
+
+# IDE settings
+.editorconfig
+.prettierrc
