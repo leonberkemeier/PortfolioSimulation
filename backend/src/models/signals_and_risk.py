@@ -16,7 +16,7 @@ class ModelSignal(Base):
     confidence = Column(Numeric(5, 2), nullable=False)  # 0-100, confidence score
     model_name = Column(String(100), nullable=False)  # Linear, CNN, XGBoost, LLM, etc.
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
-    metadata = Column(Text, nullable=True)  # JSON string with additional signal info
+    signal_metadata = Column(Text, nullable=True)  # JSON string with additional signal info
 
     # Relationships
     portfolio = relationship("Portfolio", back_populates="model_signals")
