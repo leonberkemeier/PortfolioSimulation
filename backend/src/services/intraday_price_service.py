@@ -119,7 +119,8 @@ class IntradayPriceService:
                 'volume': volume,
                 'chart_data': chart_data,
                 'timestamp': datetime.now().isoformat(),
-                'last_update': str(data.index[-1])
+                'last_update': str(data.index[-1]),
+                'dividend_yield': self._get_dividend_yield(ticker)
             }
             
             self.intraday_data[ticker] = result
@@ -146,6 +147,51 @@ class IntradayPriceService:
             if data:
                 results[ticker] = data
         return results
+    
+    def _get_dividend_yield(self, ticker: str) -> Optional[float]:
+        """
+        Fetch dividend yield for a ticker from Yahoo Finance.
+        
+        Args:
+            ticker: Stock ticker symbol
+            
+        Returns:
+            Dividend yield as percentage (e.g., 3.5 for 3.5%) or None
+        """
+        try:
+            stock = yf.Ticker(ticker)
+            info = stock.info
+            
+            # Try to get dividend yield (already as percentage in some cases)
+            dividend_yield = info.get('dividendYield')
+            if dividend_yield and dividend_yield > 0:
+                # Yahoo returns this as a decimal (e.g., 0.035 for 3.5%)
+                # But check if it's already a percentage by seeing if > 1
+                if dividend_yield < 1:
+                    return float(dividend_yield * 100)  # Convert from decimal to percentage
+                else:
+                    # Already a percentage or invalid
+                    return float(dividend_yield) if dividend_yield < 100 else None
+            
+            # For bonds/ETFs, try trailing annual dividend yield
+            trailing_yield = info.get('trailingAnnualDividendYield')
+            if trailing_yield and trailing_yield > 0:
+                if trailing_yield < 1:
+                    return float(trailing_yield * 100)
+                else:
+                    return float(trailing_yield) if trailing_yield < 100 else None
+            
+            # Calculate from dividend and price
+            dividend_rate = info.get('dividendRate')
+            current_price = info.get('currentPrice') or info.get('regularMarketPrice')
+            if dividend_rate and current_price and current_price > 0:
+                calculated_yield = (dividend_rate / current_price) * 100
+                return float(calculated_yield) if calculated_yield < 100 else None
+            
+            return None
+        except Exception as e:
+            print(f"Error fetching dividend yield for {ticker}: {e}")
+            return None
     
     def clear_cache(self):
         """Clear all cached data."""

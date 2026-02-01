@@ -280,6 +280,8 @@ export default function PortfolioDetail() {
                   <th>Avg Price</th>
                   <th>Current Price</th>
                   <th>Current Value</th>
+                  <th>Yield %</th>
+                  <th>Annual Income</th>
                   <th>Return</th>
                   <th>Return %</th>
                 </tr>
@@ -288,6 +290,8 @@ export default function PortfolioDetail() {
                 {holdings.map((holding) => {
                   const returnPct = ((parseFloat(holding.current_price || 0) - parseFloat(holding.entry_price || 0)) / parseFloat(holding.entry_price || 1)) * 100;
                   const returnValue = (parseFloat(holding.current_price || 0) - parseFloat(holding.entry_price || 0)) * parseFloat(holding.quantity || 0);
+                  const dividendYield = parseFloat(holding.dividend_yield || 0);
+                  const annualIncome = parseFloat(holding.annual_income || 0);
                   
                   return (
                     <tr key={holding.ticker}>
@@ -296,6 +300,12 @@ export default function PortfolioDetail() {
                       <td>{formatCurrency(parseFloat(holding.entry_price || 0))}</td>
                       <td>{formatCurrency(parseFloat(holding.current_price || 0))}</td>
                       <td>{formatCurrency(parseFloat(holding.current_value || 0))}</td>
+                      <td className={dividendYield > 0 ? 'text-success' : ''}>
+                        {dividendYield > 0 ? `${dividendYield.toFixed(2)}%` : '-'}
+                      </td>
+                      <td className={annualIncome > 0 ? 'text-success' : ''}>
+                        {annualIncome > 0 ? formatCurrency(annualIncome) : '-'}
+                      </td>
                       <td className={returnValue >= 0 ? 'text-success' : 'text-danger'}>
                         {formatCurrency(returnValue)}
                       </td>

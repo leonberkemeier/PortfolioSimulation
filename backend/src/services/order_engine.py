@@ -66,10 +66,35 @@ class OrderEngine:
         # Try database first
         price = self.price_lookup.get_price(ticker, asset_type)
         
-        # Fallback to Yahoo Finance for stocks if not in database
-        if price is None and asset_type == AssetType.STOCK:
+        # Fallback to Yahoo Finance if not in database
+        if price is None:
             try:
-                intraday_data = self.intraday_service.get_intraday_data(ticker.upper())
+                # Format ticker for Yahoo Finance
+                yahoo_ticker = ticker.upper()
+                if asset_type == AssetType.CRYPTO:
+                    # Crypto needs -USD suffix
+                    yahoo_ticker = f"{ticker.upper()}-USD"
+                elif asset_type == AssetType.BOND:
+                    # Bond yield indices use ^ prefix
+                    # Map common bond ticker patterns
+                    bond_mapping = {
+                        'US10Y': '^TNX',  # 10-Year Treasury Yield
+                        'US30Y': '^TYX',  # 30-Year Treasury Yield
+                        'US5Y': '^FVX',   # 5-Year Treasury Yield
+                        'US2Y': '^IRX',   # 13-Week Treasury Bill
+                    }
+                    yahoo_ticker = bond_mapping.get(ticker.upper(), ticker.upper())
+                elif asset_type == AssetType.COMMODITY:
+                    # Commodity futures use =F suffix, or use ETF equivalents
+                    commodity_mapping = {
+                        'GC': 'GLD',   # Gold -> Gold ETF
+                        'SI': 'SLV',   # Silver -> Silver ETF
+                        'CL': 'USO',   # Crude Oil -> Oil ETF
+                        'NG': 'UNG',   # Natural Gas -> Natural Gas ETF
+                    }
+                    yahoo_ticker = commodity_mapping.get(ticker.upper(), ticker.upper())
+                
+                intraday_data = self.intraday_service.get_intraday_data(yahoo_ticker)
                 if intraday_data and 'current_price' in intraday_data:
                     price = Decimal(str(intraday_data['current_price']))
             except Exception as e:

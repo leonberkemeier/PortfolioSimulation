@@ -37,6 +37,7 @@ class Holding(Base):
     entry_price = Column(Numeric(15, 8), nullable=False)
     entry_date = Column(DateTime, default=datetime.utcnow, nullable=False)
     current_price = Column(Numeric(15, 8), nullable=True)
+    dividend_yield = Column(Numeric(10, 4), nullable=True)  # Annual yield percentage (e.g., 3.5 for 3.5%)
 
     # Relationships
     portfolio = relationship("Portfolio", back_populates="holdings")
@@ -64,6 +65,14 @@ class Holding(Base):
         if self.entry_value == 0:
             return 0.0
         return float(self.unrealized_pl / self.entry_value * 100)
+
+    @property
+    def annual_income(self) -> Decimal:
+        """Estimated annual dividend/yield income"""
+        if not self.dividend_yield or not self.current_price:
+            return Decimal('0')
+        # Calculate annual income: current_value * (yield / 100)
+        return self.current_value * (self.dividend_yield / Decimal('100'))
 
     def __repr__(self):
         return f"<Holding(ticker={self.ticker}, qty={self.quantity}, value={self.current_value})>"

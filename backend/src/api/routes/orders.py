@@ -140,7 +140,7 @@ async def get_holdings(
     portfolio_id: int,
     db: Session = Depends(get_db)
 ):
-    """Get current holdings in a portfolio."""
+    """Get current holdings in a portfolio with updated prices and yields."""
     portfolio = db.query(Portfolio).get(portfolio_id)
     if not portfolio:
         raise HTTPException(
@@ -149,6 +149,43 @@ async def get_holdings(
         )
 
     holdings = db.query(Holding).filter_by(portfolio_id=portfolio_id).all()
+    
+    # Update current prices and dividend yields for all holdings
+    for holding in holdings:
+        try:
+            # Format ticker for Yahoo Finance
+            yahoo_ticker = holding.ticker.upper()
+            if holding.asset_type == AssetType.CRYPTO:
+                yahoo_ticker = f"{holding.ticker.upper()}-USD"
+            elif holding.asset_type == AssetType.BOND:
+                bond_mapping = {
+                    'US10Y': '^TNX',
+                    'US30Y': '^TYX',
+                    'US5Y': '^FVX',
+                    'US2Y': '^IRX',
+                }
+                yahoo_ticker = bond_mapping.get(holding.ticker.upper(), holding.ticker.upper())
+            elif holding.asset_type == AssetType.COMMODITY:
+                commodity_mapping = {
+                    'GC': 'GLD',   # Gold -> Gold ETF
+                    'SI': 'SLV',   # Silver -> Silver ETF
+                    'CL': 'USO',   # Crude Oil -> Oil ETF
+                    'NG': 'UNG',   # Natural Gas -> Natural Gas ETF
+                }
+                yahoo_ticker = commodity_mapping.get(holding.ticker.upper(), holding.ticker.upper())
+            
+            # Get latest intraday data including dividend yield
+            intraday_data = intraday_service.get_intraday_data(yahoo_ticker)
+            if intraday_data:
+                holding.current_price = Decimal(str(intraday_data.get('current_price', 0)))
+                dividend_yield = intraday_data.get('dividend_yield')
+                if dividend_yield is not None:
+                    holding.dividend_yield = Decimal(str(dividend_yield))
+        except Exception as e:
+            print(f"Error updating holding {holding.ticker}: {e}")
+            # Keep existing prices if update fails
+    
+    db.commit()
     return [HoldingResponse.from_orm(h) for h in holdings]
 
 
@@ -171,22 +208,28 @@ async def get_quote(symbol: str):
         
         if intraday_data and 'current_price' in intraday_data:
             # We have live data from Yahoo Finance
+            response_data = {
+                "symbol": ticker,
+                "name": f"{ticker} Inc.",
+                "price": float(intraday_data['current_price']),
+                "change": float(intraday_data.get('daily_change', 0)),
+                "changePercent": float(intraday_data.get('daily_change_pct', 0)),
+                "open": float(intraday_data.get('day_open', intraday_data['current_price'])),
+                "high": float(intraday_data.get('day_high', intraday_data['current_price'])),
+                "low": float(intraday_data.get('day_low', intraday_data['current_price'])),
+                "volume": int(intraday_data.get('volume', 0)),
+                "previousClose": float(intraday_data.get('day_open', intraday_data['current_price'])),
+                "currency": "USD",
+                "source": "yahoo_finance_live"
+            }
+            
+            # Add dividend yield if available
+            if intraday_data.get('dividend_yield') is not None:
+                response_data["dividendYield"] = float(intraday_data['dividend_yield'])
+            
             return JSONResponse(
                 status_code=200,
-                content={
-                    "symbol": ticker,
-                    "name": f"{ticker} Inc.",
-                    "price": float(intraday_data['current_price']),
-                    "change": float(intraday_data.get('daily_change', 0)),
-                    "changePercent": float(intraday_data.get('daily_change_pct', 0)),
-                    "open": float(intraday_data.get('day_open', intraday_data['current_price'])),
-                    "high": float(intraday_data.get('day_high', intraday_data['current_price'])),
-                    "low": float(intraday_data.get('day_low', intraday_data['current_price'])),
-                    "volume": int(intraday_data.get('volume', 0)),
-                    "previousClose": float(intraday_data.get('day_open', intraday_data['current_price'])),
-                    "currency": "USD",
-                    "source": "yahoo_finance_live"
-                }
+                content=response_data
             )
         
         # Fallback to database price if live data unavailable

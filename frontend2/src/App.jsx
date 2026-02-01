@@ -5,6 +5,7 @@ import PortfolioDetail from './pages/PortfolioDetail';
 import TradingInterface from './pages/TradingInterface';
 import PortfolioCreationWizard from './pages/PortfolioCreationWizard';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import AssetReference from './pages/AssetReference';
 import './styles/global.css';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="/trade/:id" element={<TradingInterface />} />
           <Route path="/create-portfolio" element={<PortfolioCreationWizard />} />
           <Route path="/analytics/:id" element={<AnalyticsDashboard />} />
+          <Route path="/assets" element={<AssetReference />} />
           {/* Placeholder routes for future pages */}
           <Route path="/models" element={<Dashboard />} />
         </Route>

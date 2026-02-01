@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingCart, TrendingUp, Activity, CheckCircle, AlertCircle, DollarSign } from 'lucide-react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, ShoppingCart, TrendingUp, Activity, CheckCircle, AlertCircle, DollarSign, Book } from 'lucide-react';
 import api, { portfolios, orders } from '../services/api';
 import '../styles/TradingInterface.css';
 
@@ -70,6 +70,24 @@ export default function TradingInterface() {
       if (assetType === 'crypto') {
         // Crypto needs -USD suffix for Yahoo Finance
         yahooSymbol = `${symbol.toUpperCase()}-USD`;
+      } else if (assetType === 'bond') {
+        // Bond yield indices use ^ prefix on Yahoo Finance
+        const bondMapping = {
+          'US10Y': '^TNX',  // 10-Year Treasury Yield
+          'US30Y': '^TYX',  // 30-Year Treasury Yield
+          'US5Y': '^FVX',   // 5-Year Treasury Yield
+          'US2Y': '^IRX',   // 13-Week Treasury Bill
+        };
+        yahooSymbol = bondMapping[symbol.toUpperCase()] || symbol.toUpperCase();
+      } else if (assetType === 'commodity') {
+        // Commodity futures -> ETF mapping
+        const commodityMapping = {
+          'GC': 'GLD',   // Gold -> Gold ETF
+          'SI': 'SLV',   // Silver -> Silver ETF
+          'CL': 'USO',   // Crude Oil -> Oil ETF
+          'NG': 'UNG',   // Natural Gas -> Natural Gas ETF
+        };
+        yahooSymbol = commodityMapping[symbol.toUpperCase()] || symbol.toUpperCase();
       }
       
       // Fetch live quote from backend (Yahoo Finance)
@@ -88,6 +106,7 @@ export default function TradingInterface() {
         volume: quoteData.volume || 0,
         previousClose: quoteData.previousClose || quoteData.price,
         source: quoteData.source || 'unknown',
+        dividendYield: quoteData.dividendYield || null,
       });
     } catch (err) {
       console.error('Error fetching quote:', err);
@@ -330,11 +349,27 @@ export default function TradingInterface() {
 
             {/* Symbol */}
             <div className="form-group">
-              <label>
-                {assetType === 'stock' && 'Stock Symbol'}
-                {assetType === 'crypto' && 'Crypto Symbol'}
-                {assetType === 'bond' && 'Bond Symbol'}
-                {assetType === 'commodity' && 'Commodity Symbol'}
+              <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>
+                  {assetType === 'stock' && 'Stock Symbol'}
+                  {assetType === 'crypto' && 'Crypto Symbol'}
+                  {assetType === 'bond' && 'Bond Symbol'}
+                  {assetType === 'commodity' && 'Commodity Symbol'}
+                </span>
+                <Link 
+                  to="/assets" 
+                  style={{ 
+                    fontSize: '0.75rem', 
+                    color: 'var(--accent-blue)', 
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                  }}
+                >
+                  <Book size={14} />
+                  Browse Assets
+                </Link>
               </label>
               <input
                 type="text"
@@ -343,14 +378,24 @@ export default function TradingInterface() {
                 placeholder={
                   assetType === 'stock' ? 'e.g., AAPL' :
                   assetType === 'crypto' ? 'e.g., BTC, ETH' :
-                  assetType === 'bond' ? 'e.g., US10Y' :
-                  'e.g., GC (Gold)'
+                  assetType === 'bond' ? 'e.g., TLT, BND, US10Y' :
+                  'e.g., GC, SI, CL'
                 }
                 required
               />
               {assetType === 'crypto' && (
                 <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
                   Use symbols like BTC, ETH, ADA, SOL
+                </small>
+              )}
+              {assetType === 'bond' && (
+                <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
+                  ETFs: TLT, IEF, BND, AGG • Yields: US10Y, US30Y, US5Y
+                </small>
+              )}
+              {assetType === 'commodity' && (
+                <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
+                  Gold: GC • Silver: SI • Oil: CL • Natural Gas: NG
                 </small>
               )}
             </div>
@@ -496,6 +541,12 @@ export default function TradingInterface() {
                   <div className="quote-stat-label">Volume</div>
                   <div className="quote-stat-value">{formatNumber(quote.volume)}</div>
                 </div>
+                {quote.dividendYield && quote.dividendYield > 0 && (
+                  <div className="quote-stat">
+                    <div className="quote-stat-label">Yield</div>
+                    <div className="quote-stat-value text-success">{quote.dividendYield.toFixed(2)}%</div>
+                  </div>
+                )}
               </div>
             </div>
           )}
