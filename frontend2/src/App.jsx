@@ -7,6 +7,7 @@ import PortfolioCreationWizard from './pages/PortfolioCreationWizard';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import AssetReference from './pages/AssetReference';
 import MarketView from './pages/MarketView';
+import TechnicalAnalysis from './pages/TechnicalAnalysis';
 import './styles/global.css';
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/market" element={<MarketView />} />
+          <Route path="/technical" element={<TechnicalAnalysis />} />
           <Route path="/portfolio/:id" element={<PortfolioDetail />} />
           <Route path="/trade/:id" element={<TradingInterface />} />
           <Route path="/create-portfolio" element={<PortfolioCreationWizard />} />

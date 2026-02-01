@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BarChart3, Layers, Plus, TrendingUp, Zap, LineChart, Book, Activity } from 'lucide-react';
+import { BarChart3, Layers, Plus, TrendingUp, Zap, LineChart, Book, Activity, BarChart2 } from 'lucide-react';
 import '../styles/Layout.css';
 
 export default function Layout() {
@@ -8,6 +8,7 @@ export default function Layout() {
   const navItems = [
     { path: '/dashboard', icon: BarChart3, label: 'Dashboard' },
     { path: '/market', icon: Activity, label: 'Live Market' },
+    { path: '/technical', icon: BarChart2, label: 'Technical Analysis' },
     { path: '/assets', icon: Book, label: 'Asset Reference' },
     { path: '/models', icon: Layers, label: 'Models' },
     { path: '/create-portfolio', icon: Plus, label: 'New Portfolio' },
