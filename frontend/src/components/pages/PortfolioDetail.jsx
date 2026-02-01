@@ -226,16 +226,22 @@ export default function PortfolioDetail() {
       </div>
 
       {/* Action Buttons */}
-      {isManual && (
-        <div className="px-8 pb-8">
+      <div className="px-8 pb-8 flex gap-4">
+        <Link
+          to={`/portfolio/${id}/live-trading`}
+          className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+        >
+          Live Trading View
+        </Link>
+        {isManual && (
           <Link
             to={`/portfolio/${id}/trade`}
             className="inline-block bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition"
           >
             Place Trade
           </Link>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

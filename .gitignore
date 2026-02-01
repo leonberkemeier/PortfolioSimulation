@@ -79,7 +79,7 @@ temp/
 tmp/
 
 # Documentation (optional - comment out if you want to track .md files)
-# *.md
+*.md
 
 # IDE settings
 .editorconfig

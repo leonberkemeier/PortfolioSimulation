@@ -66,7 +66,6 @@ class OrderRequest(BaseModel):
     ticker: str = Field(..., min_length=1, max_length=20)
     asset_type: str = Field(..., pattern="^(stock|crypto|bond|commodity)$")
     quantity: float = Field(..., gt=0)
-    order_type: str = Field(..., pattern="^(buy|sell)$")
     fee_structure_id: Optional[int] = Field(None)
 
 

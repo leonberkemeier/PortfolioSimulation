@@ -32,9 +32,10 @@ class PriceLookup:
             db = self.SessionLocal()
             result = db.execute(
                 text("""
-                SELECT close FROM fact_stock_price
-                WHERE ticker = :ticker
-                ORDER BY date DESC
+                SELECT fsp.close_price FROM fact_stock_price fsp
+                JOIN dim_company dc ON fsp.company_id = dc.company_id
+                WHERE dc.ticker = :ticker
+                ORDER BY fsp.date_id DESC
                 LIMIT 1
                 """),
                 {"ticker": ticker}

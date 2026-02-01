@@ -9,6 +9,7 @@ import TradingInterface from './components/pages/TradingInterface';
 import ModelComparison from './components/pages/ModelComparison';
 import PortfolioCreationWizard from './components/pages/PortfolioCreationWizard';
 import AnalyticsDashboard from './components/pages/AnalyticsDashboard';
+import LiveTradingView from './components/pages/LiveTradingView';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/portfolio/:id" element={<PortfolioDetail />} />
           <Route path="/portfolio/:id/trade" element={<TradingInterface />} />
           <Route path="/portfolio/:id/analytics" element={<AnalyticsDashboard />} />
+          <Route path="/portfolio/:id/live-trading" element={<LiveTradingView />} />
           <Route path="/models" element={<ModelComparison />} />
           <Route path="/create-portfolio" element={<PortfolioCreationWizard />} />
         </Route>

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..database import SessionLocal, get_db
 from .schemas import HealthCheckResponse, ErrorResponse
-from .routes import portfolios, orders, analytics
+from .routes import portfolios, orders, analytics, live_trading
 
 # Create FastAPI app
 app = FastAPI(
@@ -69,6 +69,12 @@ app.include_router(
     analytics.router,
     prefix="/api/analytics",
     tags=["Analytics"]
+)
+
+app.include_router(
+    live_trading.router,
+    prefix="/api",
+    tags=["Live Trading"]
 )
 
 # ============ Error Handlers ============
