@@ -114,6 +114,7 @@ class HoldingResponse(BaseModel):
     unrealized_pl_pct: float
     dividend_yield: Optional[Decimal]
     annual_income: Optional[Decimal]
+    pe_ratio: Optional[Decimal]
 
     class Config:
         from_attributes = True

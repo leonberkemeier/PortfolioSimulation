@@ -227,7 +227,28 @@
 
 .symbol-cell {
   font-weight: 600;
+}
+
+.symbol-link {
+  background: none;
+  border: none;
   color: var(--accent-blue);
+  font-weight: 600;
+  font-size: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: all 0.2s ease;
+}
+
+.symbol-link:hover {
+  color: var(--accent-blue-hover);
+  text-decoration-color: var(--accent-blue-hover);
+}
+
+.symbol-link:active {
+  transform: scale(0.98);
 }
 
 .transactions-list {

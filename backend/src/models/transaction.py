@@ -38,6 +38,7 @@ class Holding(Base):
     entry_date = Column(DateTime, default=datetime.utcnow, nullable=False)
     current_price = Column(Numeric(15, 8), nullable=True)
     dividend_yield = Column(Numeric(10, 4), nullable=True)  # Annual yield percentage (e.g., 3.5 for 3.5%)
+    pe_ratio = Column(Numeric(10, 2), nullable=True)  # Price-to-Earnings ratio (e.g., 25.5)
 
     # Relationships
     portfolio = relationship("Portfolio", back_populates="holdings")

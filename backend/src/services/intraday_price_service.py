@@ -120,7 +120,9 @@ class IntradayPriceService:
                 'chart_data': chart_data,
                 'timestamp': datetime.now().isoformat(),
                 'last_update': str(data.index[-1]),
-                'dividend_yield': self._get_dividend_yield(ticker)
+                'dividend_yield': self._get_dividend_yield(ticker),
+                'dividend_rate': self._get_dividend_rate(ticker),
+                'pe_ratio': self._get_pe_ratio(ticker)
             }
             
             self.intraday_data[ticker] = result
@@ -162,35 +164,94 @@ class IntradayPriceService:
             stock = yf.Ticker(ticker)
             info = stock.info
             
-            # Try to get dividend yield (already as percentage in some cases)
+            # First try dividendYield - this is ALREADY a percentage from Yahoo (e.g., 0.4 means 0.4%)
             dividend_yield = info.get('dividendYield')
-            if dividend_yield and dividend_yield > 0:
-                # Yahoo returns this as a decimal (e.g., 0.035 for 3.5%)
-                # But check if it's already a percentage by seeing if > 1
-                if dividend_yield < 1:
-                    return float(dividend_yield * 100)  # Convert from decimal to percentage
-                else:
-                    # Already a percentage or invalid
-                    return float(dividend_yield) if dividend_yield < 100 else None
+            if dividend_yield is not None and dividend_yield > 0:
+                # This is already a percentage, don't multiply by 100
+                if dividend_yield < 50:  # Sanity check (50% would be very high)
+                    return round(float(dividend_yield), 2)
             
-            # For bonds/ETFs, try trailing annual dividend yield
+            # Try trailingAnnualDividendYield - this is a DECIMAL (e.g., 0.004 means 0.4%)
             trailing_yield = info.get('trailingAnnualDividendYield')
-            if trailing_yield and trailing_yield > 0:
-                if trailing_yield < 1:
-                    return float(trailing_yield * 100)
-                else:
-                    return float(trailing_yield) if trailing_yield < 100 else None
+            if trailing_yield is not None and trailing_yield > 0:
+                # Convert decimal to percentage
+                if trailing_yield < 0.5:  # If less than 0.5, it's a decimal
+                    return round(float(trailing_yield * 100), 2)
+                elif trailing_yield < 50:  # Already a percentage
+                    return round(float(trailing_yield), 2)
             
-            # Calculate from dividend and price
+            # Calculate from dividend and price as fallback
             dividend_rate = info.get('dividendRate')
             current_price = info.get('currentPrice') or info.get('regularMarketPrice')
             if dividend_rate and current_price and current_price > 0:
                 calculated_yield = (dividend_rate / current_price) * 100
-                return float(calculated_yield) if calculated_yield < 100 else None
+                if calculated_yield < 50:  # Sanity check
+                    return round(float(calculated_yield), 2)
             
             return None
         except Exception as e:
             print(f"Error fetching dividend yield for {ticker}: {e}")
+            return None
+    
+    def _get_dividend_rate(self, ticker: str) -> Optional[float]:
+        """
+        Fetch annual dividend per share for a ticker from Yahoo Finance.
+        
+        Args:
+            ticker: Stock ticker symbol
+            
+        Returns:
+            Annual dividend per share (e.g., 1.04 for $1.04/share) or None
+        """
+        try:
+            stock = yf.Ticker(ticker)
+            info = stock.info
+            
+            # Get the dividend rate (annual dividend per share)
+            dividend_rate = info.get('dividendRate')
+            if dividend_rate and dividend_rate > 0:
+                return round(float(dividend_rate), 2)
+            
+            # Try trailing annual dividend rate
+            trailing_rate = info.get('trailingAnnualDividendRate')
+            if trailing_rate and trailing_rate > 0:
+                return round(float(trailing_rate), 2)
+            
+            return None
+        except Exception as e:
+            print(f"Error fetching dividend rate for {ticker}: {e}")
+            return None
+    
+    def _get_pe_ratio(self, ticker: str) -> Optional[float]:
+        """
+        Fetch P/E ratio (Price-to-Earnings) for a ticker from Yahoo Finance.
+        
+        Args:
+            ticker: Stock ticker symbol
+            
+        Returns:
+            P/E ratio (e.g., 25.5) or None if not available
+        """
+        try:
+            stock = yf.Ticker(ticker)
+            info = stock.info
+            
+            # Try trailing P/E ratio first (most common)
+            trailing_pe = info.get('trailingPE')
+            if trailing_pe is not None and trailing_pe > 0:
+                # Sanity check: P/E should typically be between 0 and 1000
+                if 0 < trailing_pe < 1000:
+                    return round(float(trailing_pe), 2)
+            
+            # Try forward P/E ratio
+            forward_pe = info.get('forwardPE')
+            if forward_pe is not None and forward_pe > 0:
+                if 0 < forward_pe < 1000:
+                    return round(float(forward_pe), 2)
+            
+            return None
+        except Exception as e:
+            print(f"Error fetching P/E ratio for {ticker}: {e}")
             return None
     
     def clear_cache(self):

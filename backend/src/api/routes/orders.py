@@ -174,13 +174,16 @@ async def get_holdings(
                 }
                 yahoo_ticker = commodity_mapping.get(holding.ticker.upper(), holding.ticker.upper())
             
-            # Get latest intraday data including dividend yield
+            # Get latest intraday data including dividend yield and P/E ratio
             intraday_data = intraday_service.get_intraday_data(yahoo_ticker)
             if intraday_data:
                 holding.current_price = Decimal(str(intraday_data.get('current_price', 0)))
                 dividend_yield = intraday_data.get('dividend_yield')
                 if dividend_yield is not None:
                     holding.dividend_yield = Decimal(str(dividend_yield))
+                pe_ratio = intraday_data.get('pe_ratio')
+                if pe_ratio is not None:
+                    holding.pe_ratio = Decimal(str(pe_ratio))
         except Exception as e:
             print(f"Error updating holding {holding.ticker}: {e}")
             # Keep existing prices if update fails
@@ -227,6 +230,14 @@ async def get_quote(symbol: str):
             if intraday_data.get('dividend_yield') is not None:
                 response_data["dividendYield"] = float(intraday_data['dividend_yield'])
             
+            # Add dividend rate (annual dividend per share) if available
+            if intraday_data.get('dividend_rate') is not None:
+                response_data["dividendRate"] = float(intraday_data['dividend_rate'])
+            
+            # Add P/E ratio if available
+            if intraday_data.get('pe_ratio') is not None:
+                response_data["peRatio"] = float(intraday_data['pe_ratio'])
+            
             return JSONResponse(
                 status_code=200,
                 content=response_data
@@ -264,4 +275,65 @@ async def get_quote(symbol: str):
         return JSONResponse(
             status_code=500,
             content={"detail": f"Error fetching quote for '{symbol}'. The symbol may be invalid or data is unavailable."}
+        )
+
+
+@router.get(
+    "/history/{symbol}",
+    summary="Get historical price data",
+    responses={
+        200: {"description": "Historical data found"},
+        404: {"description": "Symbol not found"},
+        500: {"description": "Server error"}
+    }
+)
+async def get_historical_data(
+    symbol: str,
+    period: str = Query("1mo", description="Time period (1d, 5d, 1mo, 3mo, 1y, max)"),
+    interval: str = Query("1d", description="Data interval (1m, 5m, 15m, 1h, 1d, 1wk)")
+):
+    """Get historical price data for charting."""
+    import yfinance as yf
+    
+    try:
+        ticker = symbol.upper()
+        stock = yf.Ticker(ticker)
+        
+        # Fetch historical data
+        hist = stock.history(period=period, interval=interval)
+        
+        if hist.empty:
+            return JSONResponse(
+                status_code=404,
+                content={"detail": f"No historical data found for '{ticker}'"}
+            )
+        
+        # Convert to list of price points
+        prices = []
+        for index, row in hist.iterrows():
+            prices.append({
+                "date": index.isoformat(),
+                "time": index.isoformat(),
+                "open": float(row['Open']),
+                "high": float(row['High']),
+                "low": float(row['Low']),
+                "close": float(row['Close']),
+                "volume": int(row['Volume'])
+            })
+        
+        return JSONResponse(
+            status_code=200,
+            content={
+                "symbol": ticker,
+                "period": period,
+                "interval": interval,
+                "prices": prices
+            }
+        )
+        
+    except Exception as e:
+        print(f"Error fetching historical data for {symbol}: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Error fetching historical data: {str(e)}"}
         )

@@ -280,6 +280,7 @@ export default function PortfolioDetail() {
                   <th>Avg Price</th>
                   <th>Current Price</th>
                   <th>Current Value</th>
+                  <th>P/E Ratio</th>
                   <th>Yield %</th>
                   <th>Annual Income</th>
                   <th>Return</th>
@@ -292,14 +293,26 @@ export default function PortfolioDetail() {
                   const returnValue = (parseFloat(holding.current_price || 0) - parseFloat(holding.entry_price || 0)) * parseFloat(holding.quantity || 0);
                   const dividendYield = parseFloat(holding.dividend_yield || 0);
                   const annualIncome = parseFloat(holding.annual_income || 0);
+                  const peRatio = parseFloat(holding.pe_ratio || 0);
                   
                   return (
                     <tr key={holding.ticker}>
-                      <td className="symbol-cell">{holding.ticker}</td>
+                      <td className="symbol-cell">
+                        <button 
+                          className="symbol-link"
+                          onClick={() => navigate(`/market?symbol=${holding.ticker}&type=${holding.asset_type || 'stock'}`)}
+                          title={`View ${holding.ticker} in Market View`}
+                        >
+                          {holding.ticker}
+                        </button>
+                      </td>
                       <td>{parseFloat(holding.quantity || 0).toFixed(2)}</td>
                       <td>{formatCurrency(parseFloat(holding.entry_price || 0))}</td>
                       <td>{formatCurrency(parseFloat(holding.current_price || 0))}</td>
                       <td>{formatCurrency(parseFloat(holding.current_value || 0))}</td>
+                      <td>
+                        {peRatio > 0 ? peRatio.toFixed(2) : '-'}
+                      </td>
                       <td className={dividendYield > 0 ? 'text-success' : ''}>
                         {dividendYield > 0 ? `${dividendYield.toFixed(2)}%` : '-'}
                       </td>
