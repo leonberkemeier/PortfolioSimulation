@@ -1,7 +1,8 @@
 """Order management endpoints."""
 
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from decimal import Decimal
 
@@ -9,8 +10,12 @@ from ...database import get_db
 from ...models import Portfolio, Transaction, Holding, AssetType, OrderType
 from ..schemas import OrderRequest, OrderResponse, TransactionResponse, HoldingResponse, OrderHistoryResponse
 from ...services.order_engine import OrderEngine
+from ...services.price_lookup import PriceLookup
+from ...services.intraday_price_service import IntradayPriceService
 
 router = APIRouter()
+price_lookup = PriceLookup()
+intraday_service = IntradayPriceService(cache_ttl_minutes=5)
 
 
 @router.post(
@@ -145,3 +150,75 @@ async def get_holdings(
 
     holdings = db.query(Holding).filter_by(portfolio_id=portfolio_id).all()
     return [HoldingResponse.from_orm(h) for h in holdings]
+
+
+@router.get(
+    "/quote/{symbol}",
+    summary="Get live stock quote",
+    responses={
+        200: {"description": "Stock quote found"},
+        404: {"description": "Symbol not found"},
+        500: {"description": "Server error"}
+    }
+)
+async def get_quote(symbol: str):
+    """Get live stock quote with real-time price from Yahoo Finance."""
+    ticker = symbol.upper()
+    
+    try:
+        # Try to get live intraday data first
+        intraday_data = intraday_service.get_intraday_data(ticker)
+        
+        if intraday_data and 'current_price' in intraday_data:
+            # We have live data from Yahoo Finance
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "symbol": ticker,
+                    "name": f"{ticker} Inc.",
+                    "price": float(intraday_data['current_price']),
+                    "change": float(intraday_data.get('daily_change', 0)),
+                    "changePercent": float(intraday_data.get('daily_change_pct', 0)),
+                    "open": float(intraday_data.get('day_open', intraday_data['current_price'])),
+                    "high": float(intraday_data.get('day_high', intraday_data['current_price'])),
+                    "low": float(intraday_data.get('day_low', intraday_data['current_price'])),
+                    "volume": int(intraday_data.get('volume', 0)),
+                    "previousClose": float(intraday_data.get('day_open', intraday_data['current_price'])),
+                    "currency": "USD",
+                    "source": "yahoo_finance_live"
+                }
+            )
+        
+        # Fallback to database price if live data unavailable
+        db_price = price_lookup.get_stock_price(ticker)
+        
+        if db_price is None:
+            return JSONResponse(
+                status_code=404,
+                content={"detail": f"Symbol '{ticker}' not found. Please verify the ticker symbol is correct."}
+            )
+        
+        return JSONResponse(
+            status_code=200,
+            content={
+                "symbol": ticker,
+                "name": f"{ticker} Inc.",
+                "price": float(db_price),
+                "change": 0,
+                "changePercent": 0,
+                "open": float(db_price),
+                "high": float(db_price),
+                "low": float(db_price),
+                "volume": 0,
+                "previousClose": float(db_price),
+                "currency": "USD",
+                "source": "database"
+            }
+        )
+            
+    except Exception as e:
+        print(f"Error in get_quote for {symbol}: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Error fetching quote for '{symbol}'. The symbol may be invalid or data is unavailable."}
+        )

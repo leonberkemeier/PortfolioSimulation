@@ -104,143 +104,181 @@ export default function PortfolioDetail() {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="p-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-          <p className="text-slate-400 text-sm">NAV</p>
-          <p className="text-2xl font-bold text-white mt-2">
-            ${parseFloat(portfolio.nav).toFixed(2)}
-          </p>
-        </div>
-        <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-          <p className="text-slate-400 text-sm">Initial Capital</p>
-          <p className="text-2xl font-bold text-white mt-2">
-            ${parseFloat(portfolio.initial_capital).toFixed(2)}
-          </p>
-        </div>
-        <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-          <p className="text-slate-400 text-sm">Available Cash</p>
-          <p className="text-2xl font-bold text-white mt-2">
-            ${parseFloat(portfolio.current_cash).toFixed(2)}
-          </p>
-        </div>
-        <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-          <p className="text-slate-400 text-sm">Total Return</p>
-          <p className={`text-2xl font-bold mt-2 ${returnColor}`}>
-            {portfolio.total_return_pct.toFixed(2)}%
-          </p>
-        </div>
-      </div>
-
-      {/* Performance Metrics */}
-      {performance && (
-        <div className="px-8 pb-8">
-          <h2 className="text-2xl font-bold text-white mb-4">Performance Metrics</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-              <p className="text-slate-400 text-xs uppercase">Sharpe Ratio</p>
-              <p className="text-xl font-bold text-white mt-2">
-                {performance.sharpe_ratio ? parseFloat(performance.sharpe_ratio).toFixed(2) : 'N/A'}
-              </p>
-            </div>
-            <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-              <p className="text-slate-400 text-xs uppercase">Sortino Ratio</p>
-              <p className="text-xl font-bold text-white mt-2">
-                {performance.sortino_ratio ? parseFloat(performance.sortino_ratio).toFixed(2) : 'N/A'}
-              </p>
-            </div>
-            <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-              <p className="text-slate-400 text-xs uppercase">Max Drawdown</p>
-              <p className="text-xl font-bold text-red-400 mt-2">
-                {performance.max_drawdown ? parseFloat(performance.max_drawdown).toFixed(2) : 'N/A'}%
-              </p>
-            </div>
-            <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-              <p className="text-slate-400 text-xs uppercase">Volatility</p>
-              <p className="text-xl font-bold text-white mt-2">
-                {performance.volatility ? parseFloat(performance.volatility).toFixed(2) : 'N/A'}%
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* NAV Chart */}
-      {snapshots.length > 0 && (
-        <div className="px-8 pb-8">
-          <h2 className="text-2xl font-bold text-white mb-4">NAV History</h2>
-          <PerformanceChart snapshots={snapshots} />
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="px-8 pb-8">
-        <div className="flex gap-4 border-b border-slate-700 mb-6">
-          <button
-            onClick={() => setActiveTab('holdings')}
-            className={`pb-3 border-b-2 transition ${
-              activeTab === 'holdings'
-                ? 'border-blue-600 text-white'
-                : 'border-transparent text-slate-400 hover:text-slate-300'
-            }`}
-          >
-            Holdings ({holdings.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('transactions')}
-            className={`pb-3 border-b-2 transition ${
-              activeTab === 'transactions'
-                ? 'border-blue-600 text-white'
-                : 'border-transparent text-slate-400 hover:text-slate-300'
-            }`}
-          >
-            Transactions ({transactions.length})
-          </button>
-        </div>
-
-        {/* Holdings Tab */}
-        {activeTab === 'holdings' && (
-          <div>
-            {holdings.length > 0 ? (
-              <HoldingsTable holdings={holdings} />
-            ) : (
-              <div className="text-center py-12 text-slate-400">
-                <p>No holdings yet</p>
+      {/* Two Column Layout: Sidebar + Main Content */}
+      <div className="flex flex-col lg:flex-row gap-6 p-6 lg:p-8">
+        {/* Left Sidebar - Stats & Metrics */}
+        <aside className="lg:w-80 xl:w-96 flex-shrink-0 space-y-6">
+          {/* Quick Stats Card */}
+          <div className="glass rounded-2xl p-6 space-y-4 sticky top-6">
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <div className="w-1 h-5 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
+              Portfolio Metrics
+            </h2>
+            
+            <div className="space-y-3">
+              <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-700/50">
+                <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Net Asset Value</p>
+                <p className="text-2xl font-black text-white">
+                  ${parseFloat(portfolio.nav).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </p>
               </div>
-            )}
-          </div>
-        )}
 
-        {/* Transactions Tab */}
-        {activeTab === 'transactions' && (
-          <div>
-            {transactions.length > 0 ? (
-              <TransactionHistory transactions={transactions} />
-            ) : (
-              <div className="text-center py-12 text-slate-400">
-                <p>No transactions yet</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-900/30 rounded-lg">
+                  <p className="text-slate-500 text-xs mb-1">Initial</p>
+                  <p className="text-white font-semibold text-sm">
+                    ${parseFloat(portfolio.initial_capital).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </p>
+                </div>
+                <div className="p-3 bg-slate-900/30 rounded-lg">
+                  <p className="text-slate-500 text-xs mb-1">Cash</p>
+                  <p className="text-white font-semibold text-sm">
+                    ${parseFloat(portfolio.current_cash).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
-        )}
-      </div>
 
-      {/* Action Buttons */}
-      <div className="px-8 pb-8 flex gap-4">
-        <Link
-          to={`/portfolio/${id}/live-trading`}
-          className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition"
-        >
-          Live Trading View
-        </Link>
-        {isManual && (
-          <Link
-            to={`/portfolio/${id}/trade`}
-            className="inline-block bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition"
-          >
-            Place Trade
-          </Link>
-        )}
+              <div className="p-4 bg-gradient-to-br from-blue-600/10 to-purple-600/10 rounded-xl border border-blue-500/20">
+                <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Total Return</p>
+                <p className={`text-3xl font-black ${returnColor}`}>
+                  {portfolio.total_return_pct >= 0 ? '+' : ''}{portfolio.total_return_pct.toFixed(2)}%
+                </p>
+              </div>
+            </div>
+
+            {/* Performance Metrics */}
+            {performance && (
+              <>
+                <div className="h-px bg-slate-700/50 my-4"></div>
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Performance</h3>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-3 bg-slate-900/30 rounded-lg">
+                      <p className="text-slate-500 text-xs mb-1">Sharpe</p>
+                      <p className="text-white font-bold">
+                        {performance.sharpe_ratio ? parseFloat(performance.sharpe_ratio).toFixed(2) : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-slate-900/30 rounded-lg">
+                      <p className="text-slate-500 text-xs mb-1">Sortino</p>
+                      <p className="text-white font-bold">
+                        {performance.sortino_ratio ? parseFloat(performance.sortino_ratio).toFixed(2) : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-slate-900/30 rounded-lg">
+                      <p className="text-slate-500 text-xs mb-1">Max DD</p>
+                      <p className="text-red-400 font-bold">
+                        {performance.max_drawdown ? parseFloat(performance.max_drawdown).toFixed(2) : 'N/A'}%
+                      </p>
+                    </div>
+                    <div className="p-3 bg-slate-900/30 rounded-lg">
+                      <p className="text-slate-500 text-xs mb-1">Volatility</p>
+                      <p className="text-white font-bold">
+                        {performance.volatility ? parseFloat(performance.volatility).toFixed(2) : 'N/A'}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Action Buttons */}
+            <div className="h-px bg-slate-700/50 my-4"></div>
+            <div className="space-y-2">
+              <Link
+                to={`/portfolio/${id}/analytics`}
+                className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white px-4 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/30"
+              >
+                <TrendingUp size={18} />
+                Analytics Dashboard
+              </Link>
+              <Link
+                to={`/portfolio/${id}/live-trading`}
+                className="flex items-center justify-center gap-2 w-full bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600 text-white px-4 py-3 rounded-xl font-semibold transition-all"
+              >
+                Live Trading View
+              </Link>
+              {isManual && (
+                <Link
+                  to={`/portfolio/${id}/trade`}
+                  className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white px-4 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-green-500/30"
+                >
+                  <TrendingUp size={18} />
+                  Place Trade
+                </Link>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 min-w-0 space-y-6">
+          {/* NAV Chart */}
+          {snapshots.length > 0 && (
+            <div className="glass rounded-2xl p-6">
+              <PerformanceChart snapshots={snapshots} />
+            </div>
+          )}
+
+          {/* Holdings & Transactions */}
+          <div className="glass rounded-2xl overflow-hidden">
+            {/* Tabs */}
+            <div className="flex gap-6 px-6 pt-6 border-b border-slate-700/50">
+              <button
+                onClick={() => setActiveTab('holdings')}
+                className={`pb-4 px-2 font-semibold transition-all relative ${
+                  activeTab === 'holdings'
+                    ? 'text-white'
+                    : 'text-slate-400 hover:text-slate-300'
+                }`}
+              >
+                Holdings ({holdings.length})
+                {activeTab === 'holdings' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('transactions')}
+                className={`pb-4 px-2 font-semibold transition-all relative ${
+                  activeTab === 'transactions'
+                    ? 'text-white'
+                    : 'text-slate-400 hover:text-slate-300'
+                }`}
+              >
+                Transactions ({transactions.length})
+                {activeTab === 'transactions' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                )}
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="p-6">
+              {activeTab === 'holdings' && (
+                holdings.length > 0 ? (
+                  <HoldingsTable holdings={holdings} />
+                ) : (
+                  <div className="text-center py-16 text-slate-400">
+                    <p className="text-lg">No holdings yet</p>
+                    <p className="text-sm mt-2">Start trading to build your portfolio</p>
+                  </div>
+                )
+              )}
+
+              {activeTab === 'transactions' && (
+                transactions.length > 0 ? (
+                  <TransactionHistory transactions={transactions} />
+                ) : (
+                  <div className="text-center py-16 text-slate-400">
+                    <p className="text-lg">No transactions yet</p>
+                    <p className="text-sm mt-2">Your trading history will appear here</p>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );

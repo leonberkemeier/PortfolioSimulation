@@ -8,6 +8,7 @@ from enum import Enum
 
 from ..models import Portfolio, Holding, Transaction, OrderType, AssetType, FeeStructure
 from .price_lookup import PriceLookup
+from .intraday_price_service import IntradayPriceService
 
 
 class OrderStatus(str, Enum):
@@ -49,6 +50,32 @@ class OrderEngine:
         """
         self.db = db_session
         self.price_lookup = PriceLookup()
+        self.intraday_service = IntradayPriceService(cache_ttl_minutes=5)
+
+    def _get_price(self, ticker: str, asset_type: AssetType) -> Optional[Decimal]:
+        """
+        Get current price for an asset, with fallback to Yahoo Finance.
+        
+        Args:
+            ticker: Asset ticker/symbol
+            asset_type: Type of asset
+            
+        Returns:
+            Current price or None if not found
+        """
+        # Try database first
+        price = self.price_lookup.get_price(ticker, asset_type)
+        
+        # Fallback to Yahoo Finance for stocks if not in database
+        if price is None and asset_type == AssetType.STOCK:
+            try:
+                intraday_data = self.intraday_service.get_intraday_data(ticker.upper())
+                if intraday_data and 'current_price' in intraday_data:
+                    price = Decimal(str(intraday_data['current_price']))
+            except Exception as e:
+                print(f"Error fetching live price for {ticker}: {e}")
+        
+        return price
 
     def buy(
         self,
@@ -75,8 +102,8 @@ class OrderEngine:
         if fee_structure is None and portfolio.fee_assignments:
             fee_structure = portfolio.fee_assignments[0].fee_structure
         
-        # Get current price
-        price = self.price_lookup.get_price(ticker, asset_type)
+        # Get current price (try database first, fallback to Yahoo Finance)
+        price = self._get_price(ticker, asset_type)
         if price is None:
             return OrderConfirmation(
                 status=OrderStatus.INVALID_ASSET,
@@ -215,8 +242,8 @@ class OrderEngine:
         if fee_structure is None and portfolio.fee_assignments:
             fee_structure = portfolio.fee_assignments[0].fee_structure
 
-        # Get current price
-        price = self.price_lookup.get_price(ticker, asset_type)
+        # Get current price (try database first, fallback to Yahoo Finance)
+        price = self._get_price(ticker, asset_type)
         if price is None:
             return OrderConfirmation(
                 status=OrderStatus.INVALID_ASSET,
