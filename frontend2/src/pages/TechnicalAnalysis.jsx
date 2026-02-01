@@ -245,14 +245,21 @@ export default function TechnicalAnalysis() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={prepareChartData()}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="time" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
+                  <XAxis 
+                    dataKey="time" 
+                    stroke="#94a3b8" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis stroke="#94a3b8" domain={['auto', 'auto']} />
                   <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }} />
                   <Legend />
-                  <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} dot={false} name="Price" />
-                  <Line type="monotone" dataKey="sma20" stroke="#10b981" strokeWidth={2} dot={false} name="SMA 20" />
-                  <Line type="monotone" dataKey="sma50" stroke="#f59e0b" strokeWidth={2} dot={false} name="SMA 50" />
-                  <Line type="monotone" dataKey="sma200" stroke="#ef4444" strokeWidth={2} dot={false} name="SMA 200" />
+                  <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} dot={false} name="Price" connectNulls />
+                  <Line type="monotone" dataKey="sma20" stroke="#10b981" strokeWidth={2} dot={false} name="SMA 20" connectNulls />
+                  <Line type="monotone" dataKey="sma50" stroke="#f59e0b" strokeWidth={2} dot={false} name="SMA 50" connectNulls />
+                  <Line type="monotone" dataKey="sma200" stroke="#ef4444" strokeWidth={2} dot={false} name="SMA 200" connectNulls />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -268,7 +275,14 @@ export default function TechnicalAnalysis() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={prepareRSIData()}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="time" stroke="#94a3b8" />
+                  <XAxis 
+                    dataKey="time" 
+                    stroke="#94a3b8" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval="preserveStartEnd"
+                  />
                   <YAxis domain={[0, 100]} stroke="#94a3b8" />
                   <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }} />
                   <ReferenceLine y={70} stroke="#ef4444" strokeDasharray="3 3" label="Overbought" />
@@ -289,8 +303,15 @@ export default function TechnicalAnalysis() {
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={prepareMACDData()}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="time" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
+                  <XAxis 
+                    dataKey="time" 
+                    stroke="#94a3b8" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis stroke="#94a3b8" domain={['auto', 'auto']} />
                   <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }} />
                   <Legend />
                   <Bar dataKey="histogram" fill="#64748b" opacity={0.5} name="Histogram" />
@@ -311,14 +332,21 @@ export default function TechnicalAnalysis() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={prepareBollingerData()}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="time" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
+                  <XAxis 
+                    dataKey="time" 
+                    stroke="#94a3b8" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis stroke="#94a3b8" domain={['auto', 'auto']} />
                   <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }} />
                   <Legend />
-                  <Line type="monotone" dataKey="upper" stroke="#ef4444" strokeWidth={1} dot={false} name="Upper Band" strokeDasharray="3 3" />
-                  <Line type="monotone" dataKey="middle" stroke="#f59e0b" strokeWidth={2} dot={false} name="Middle (SMA 20)" />
-                  <Line type="monotone" dataKey="lower" stroke="#10b981" strokeWidth={1} dot={false} name="Lower Band" strokeDasharray="3 3" />
-                  <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} dot={false} name="Price" />
+                  <Line type="monotone" dataKey="upper" stroke="#ef4444" strokeWidth={1} dot={false} name="Upper Band" strokeDasharray="3 3" connectNulls />
+                  <Line type="monotone" dataKey="middle" stroke="#f59e0b" strokeWidth={2} dot={false} name="Middle (SMA 20)" connectNulls />
+                  <Line type="monotone" dataKey="lower" stroke="#10b981" strokeWidth={1} dot={false} name="Lower Band" strokeDasharray="3 3" connectNulls />
+                  <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} dot={false} name="Price" connectNulls />
                 </LineChart>
               </ResponsiveContainer>
             </div>

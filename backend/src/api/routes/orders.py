@@ -337,3 +337,143 @@ async def get_historical_data(
             status_code=500,
             content={"detail": f"Error fetching historical data: {str(e)}"}
         )
+
+
+@router.get(
+    "/fundamentals/{symbol}",
+    summary="Get fundamental data for a stock",
+    responses={
+        200: {"description": "Fundamental data found"},
+        404: {"description": "Symbol not found"},
+        500: {"description": "Server error"}
+    }
+)
+async def get_fundamentals(symbol: str):
+    """Get fundamental data including earnings, financials, and company info."""
+    import yfinance as yf
+    
+    try:
+        ticker = symbol.upper()
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        
+        if not info or len(info) < 5:
+            return JSONResponse(
+                status_code=404,
+                content={"detail": f"No fundamental data found for '{ticker}'"}
+            )
+        
+        # Extract key fundamental data
+        fundamentals = {
+            "symbol": ticker,
+            
+            # Company Info
+            "company": {
+                "name": info.get("longName") or info.get("shortName", ticker),
+                "sector": info.get("sector"),
+                "industry": info.get("industry"),
+                "website": info.get("website"),
+                "description": info.get("longBusinessSummary"),
+                "employees": info.get("fullTimeEmployees"),
+                "country": info.get("country"),
+                "city": info.get("city"),
+                "state": info.get("state")
+            },
+            
+            # Valuation Metrics
+            "valuation": {
+                "marketCap": info.get("marketCap"),
+                "enterpriseValue": info.get("enterpriseValue"),
+                "peRatio": info.get("trailingPE") or info.get("forwardPE"),
+                "trailingPE": info.get("trailingPE"),
+                "forwardPE": info.get("forwardPE"),
+                "pegRatio": info.get("pegRatio"),
+                "priceToBook": info.get("priceToBook"),
+                "priceToSales": info.get("priceToSalesTrailing12Months"),
+                "evToRevenue": info.get("enterpriseToRevenue"),
+                "evToEbitda": info.get("enterpriseToEbitda")
+            },
+            
+            # Financial Metrics
+            "financial": {
+                "totalRevenue": info.get("totalRevenue"),
+                "revenuePerShare": info.get("revenuePerShare"),
+                "revenue": info.get("totalRevenue"),
+                "grossProfits": info.get("grossProfits"),
+                "ebitda": info.get("ebitda"),
+                "netIncome": info.get("netIncomeToCommon"),
+                "earningsGrowth": info.get("earningsGrowth"),
+                "revenueGrowth": info.get("revenueGrowth"),
+                "grossMargins": info.get("grossMargins"),
+                "operatingMargins": info.get("operatingMargins"),
+                "profitMargins": info.get("profitMargins"),
+                "returnOnAssets": info.get("returnOnAssets"),
+                "returnOnEquity": info.get("returnOnEquity")
+            },
+            
+            # Earnings
+            "earnings": {
+                "earningsDate": info.get("earningsDate"),
+                "earningsPerShare": info.get("trailingEps"),
+                "forwardEps": info.get("forwardEps"),
+                "earningsQuarterlyGrowth": info.get("earningsQuarterlyGrowth")
+            },
+            
+            # Dividends
+            "dividends": {
+                "dividendRate": info.get("dividendRate"),
+                "dividendYield": info.get("dividendYield"),
+                "exDividendDate": info.get("exDividendDate"),
+                "payoutRatio": info.get("payoutRatio"),
+                "fiveYearAvgDividendYield": info.get("fiveYearAvgDividendYield")
+            },
+            
+            # Balance Sheet
+            "balanceSheet": {
+                "totalCash": info.get("totalCash"),
+                "totalDebt": info.get("totalDebt"),
+                "totalAssets": info.get("totalAssets"),
+                "totalLiabilities": info.get("totalLiabilities"),
+                "bookValue": info.get("bookValue"),
+                "cashPerShare": info.get("totalCashPerShare"),
+                "debtToEquity": info.get("debtToEquity"),
+                "currentRatio": info.get("currentRatio"),
+                "quickRatio": info.get("quickRatio")
+            },
+            
+            # Trading Info
+            "trading": {
+                "beta": info.get("beta"),
+                "fiftyTwoWeekHigh": info.get("fiftyTwoWeekHigh"),
+                "fiftyTwoWeekLow": info.get("fiftyTwoWeekLow"),
+                "fiftyDayAverage": info.get("fiftyDayAverage"),
+                "twoHundredDayAverage": info.get("twoHundredDayAverage"),
+                "averageVolume": info.get("averageVolume"),
+                "averageVolume10days": info.get("averageVolume10days"),
+                "sharesOutstanding": info.get("sharesOutstanding"),
+                "floatShares": info.get("floatShares"),
+                "shortRatio": info.get("shortRatio"),
+                "shortPercentOfFloat": info.get("shortPercentOfFloat")
+            },
+            
+            # Analyst Recommendations
+            "analysts": {
+                "targetMeanPrice": info.get("targetMeanPrice"),
+                "targetHighPrice": info.get("targetHighPrice"),
+                "targetLowPrice": info.get("targetLowPrice"),
+                "recommendationKey": info.get("recommendationKey"),
+                "numberOfAnalystOpinions": info.get("numberOfAnalystOpinions")
+            }
+        }
+        
+        return JSONResponse(
+            status_code=200,
+            content=fundamentals
+        )
+        
+    except Exception as e:
+        print(f"Error fetching fundamentals for {symbol}: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Error fetching fundamental data: {str(e)}"}
+        )

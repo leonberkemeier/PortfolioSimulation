@@ -216,7 +216,16 @@ async def get_technical_indicators(
     try:
         # Fetch historical data from Yahoo Finance
         ticker = yf.Ticker(symbol.upper())
-        hist = ticker.history(period=period, interval=interval)
+        
+        # For shorter periods, fetch more data to calculate long-term indicators
+        # but we'll only display the requested period
+        fetch_period = period
+        if period == "1mo":
+            fetch_period = "1y"  # Need enough data for SMA 200
+        elif period == "3mo":
+            fetch_period = "1y"  # Ensure we have enough for SMA 200
+        
+        hist = ticker.history(period=fetch_period, interval=interval)
         
         if hist.empty:
             raise HTTPException(
@@ -224,11 +233,31 @@ async def get_technical_indicators(
                 detail=f"No data found for symbol '{symbol}'"
             )
         
-        # Extract closing prices
-        prices = hist['Close'].tolist()
+        # Extract closing prices (all data for calculations)
+        all_prices = hist['Close'].tolist()
         
-        # Calculate all indicators
-        indicators = TechnicalIndicators.calculate_all_indicators(prices)
+        # Calculate all indicators using full dataset
+        indicators = TechnicalIndicators.calculate_all_indicators(all_prices)
+        
+        # Determine how many data points to display based on requested period
+        display_days = {
+            "1mo": 21,
+            "3mo": 63,
+            "6mo": 126,
+            "1y": 252,
+            "2y": 504,
+            "5y": 1260
+        }
+        num_display = min(display_days.get(period, len(all_prices)), len(all_prices))
+        
+        # Slice the data to show only the requested period
+        prices = all_prices[-num_display:]
+        timestamps = hist.index[-num_display:]
+        
+        # Slice indicator arrays to match display period
+        for key in indicators:
+            if indicators[key] and isinstance(indicators[key], list):
+                indicators[key] = indicators[key][-num_display:]
         
         # Get latest values
         latest_values = TechnicalIndicators.get_latest_values(indicators)
@@ -236,8 +265,8 @@ async def get_technical_indicators(
         # Generate signals
         signals = TechnicalIndicators.generate_signals(indicators, prices)
         
-        # Prepare response with chart data
-        timestamps = [str(ts) for ts in hist.index]
+        # Prepare response with chart data (use sliced timestamps)
+        timestamps_str = [str(ts) for ts in timestamps]
         
         return {
             "symbol": symbol.upper(),
@@ -272,7 +301,7 @@ async def get_technical_indicators(
             },
             "signals": signals,
             "chart_data": {
-                "timestamps": timestamps,
+                "timestamps": timestamps_str,
                 "prices": prices,
                 "sma_20": indicators.get('sma_20'),
                 "sma_50": indicators.get('sma_50'),

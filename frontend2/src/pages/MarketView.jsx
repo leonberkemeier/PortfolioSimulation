@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Search, TrendingUp, TrendingDown, Activity, BarChart3, Calendar, BarChart2, LineChart as LineChartIcon } from 'lucide-react';
+import { useSearchParams, Link } from 'react-router-dom';
+import { 
+  Search, TrendingUp, TrendingDown, Activity, BarChart3, Calendar, BarChart2, 
+  LineChart as LineChartIcon, Building2, DollarSign, PieChart, Briefcase, 
+  Target, TrendingUp as Growth, Landmark, Users, Globe
+} from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart } from 'recharts';
 import api from '../services/api';
 import '../styles/MarketView.css';
@@ -94,6 +98,7 @@ const MarketView = () => {
   const [searchInput, setSearchInput] = useState(urlSymbol || 'AAPL');
   const [assetType, setAssetType] = useState(urlType || 'stock');
   const [quote, setQuote] = useState(null);
+  const [fundamentals, setFundamentals] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [volumeData, setVolumeData] = useState([]);
   const [timeRange, setTimeRange] = useState('1d');
@@ -162,6 +167,19 @@ const MarketView = () => {
       const quoteResponse = await api.get(`/orders/quote/${yahooSymbol}`);
       setQuote(quoteResponse.data);
 
+      // Fetch fundamentals (only for stocks)
+      if (assetType === 'stock') {
+        try {
+          const fundamentalsResponse = await api.get(`/orders/fundamentals/${yahooSymbol}`);
+          setFundamentals(fundamentalsResponse.data);
+        } catch (err) {
+          console.log('Fundamentals not available for this symbol');
+          setFundamentals(null);
+        }
+      } else {
+        setFundamentals(null);
+      }
+
       // Fetch historical data from Yahoo Finance via yfinance
       const range = timeRanges.find(r => r.value === timeRange);
       const historyResponse = await api.get(`/orders/history/${yahooSymbol}`, {
@@ -201,7 +219,14 @@ const MarketView = () => {
     }
   };
 
-  const formatCurrency = (value) => {
+  const formatCurrency = (value, compact = false) => {
+    if (compact) {
+      // For large numbers (market cap, revenue, etc.)
+      if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+      if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+      if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+      if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -260,6 +285,21 @@ const MarketView = () => {
             <div className="quote-symbol-section">
               <h1 className="quote-symbol">{quote.symbol}</h1>
               <span className="quote-name">{quote.name}</span>
+              <Link 
+                to={`/technical?symbol=${quote.symbol}`} 
+                className="btn btn-secondary"
+                style={{ 
+                  marginLeft: '1rem', 
+                  fontSize: '0.875rem',
+                  padding: '0.5rem 1rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                <BarChart2 size={16} />
+                Technical Analysis
+              </Link>
             </div>
             <div className="quote-price-section">
               <div className="current-price">{formatCurrency(quote.price)}</div>
@@ -499,6 +539,363 @@ const MarketView = () => {
                     {quote.dividendYield && `${quote.dividendYield.toFixed(2)}%`}
                     {quote.dividendYield && quote.dividendRate && ' • '}
                     {quote.dividendRate && `${formatCurrency(quote.dividendRate)}`}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Fundamentals Section (Stocks Only) */}
+          {fundamentals && assetType === 'stock' && (
+            <div className="fundamentals-section">
+              <div className="fundamentals-header">
+                <h2>
+                  <Briefcase size={28} />
+                  Company Fundamentals
+                </h2>
+                <p className="fundamentals-subtitle">Detailed financial metrics and analysis</p>
+              </div>
+
+              {/* Company Info */}
+              {fundamentals.company && (
+                <div className="fundamental-group">
+                  <div className="fundamental-group-header">
+                    <Building2 size={20} />
+                    <h3>Company Information</h3>
+                  </div>
+                  <div className="fundamentals-grid">
+                    {fundamentals.company.name && (
+                      <div className="fundamental-card highlight-card">
+                        <div className="fundamental-icon">
+                          <Building2 size={18} />
+                        </div>
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Company Name</div>
+                          <div className="fundamental-value">{fundamentals.company.name}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.company.sector && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-icon">
+                          <PieChart size={18} />
+                        </div>
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Sector</div>
+                          <div className="fundamental-value">{fundamentals.company.sector}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.company.industry && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-icon">
+                          <Briefcase size={18} />
+                        </div>
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Industry</div>
+                          <div className="fundamental-value">{fundamentals.company.industry}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.company.employees && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-icon">
+                          <Users size={18} />
+                        </div>
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Employees</div>
+                          <div className="fundamental-value">{formatNumber(fundamentals.company.employees)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.company.country && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-icon">
+                          <Globe size={18} />
+                        </div>
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Location</div>
+                          <div className="fundamental-value">
+                            {fundamentals.company.city && `${fundamentals.company.city}, `}
+                            {fundamentals.company.state && `${fundamentals.company.state}, `}
+                            {fundamentals.company.country}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Valuation Metrics */}
+              {fundamentals.valuation && (
+                <div className="fundamental-group">
+                  <div className="fundamental-group-header">
+                    <DollarSign size={20} />
+                    <h3>Valuation Metrics</h3>
+                  </div>
+                  <div className="fundamentals-grid">
+                    {fundamentals.valuation.marketCap && (
+                      <div className="fundamental-card highlight-card">
+                        <div className="fundamental-icon primary">
+                          <DollarSign size={18} />
+                        </div>
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Market Cap</div>
+                          <div className="fundamental-value">{formatCurrency(fundamentals.valuation.marketCap, true)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.valuation.peRatio && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">P/E Ratio (TTM)</div>
+                          <div className="fundamental-value">{fundamentals.valuation.peRatio.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.valuation.forwardPE && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Forward P/E</div>
+                          <div className="fundamental-value">{fundamentals.valuation.forwardPE.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.valuation.priceToBook && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Price/Book</div>
+                          <div className="fundamental-value">{fundamentals.valuation.priceToBook.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.valuation.priceToSales && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Price/Sales</div>
+                          <div className="fundamental-value">{fundamentals.valuation.priceToSales.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.valuation.pegRatio && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">PEG Ratio</div>
+                          <div className="fundamental-value">{fundamentals.valuation.pegRatio.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Financial Performance */}
+              {fundamentals.financial && (
+                <div className="fundamental-group">
+                  <div className="fundamental-group-header">
+                    <Growth size={20} />
+                    <h3>Financial Performance</h3>
+                  </div>
+                  <div className="fundamentals-grid">
+                    {fundamentals.financial.totalRevenue && (
+                      <div className="stat-card">
+                        <div className="stat-label">Revenue (TTM)</div>
+                        <div className="stat-value">{formatCurrency(fundamentals.financial.totalRevenue, true)}</div>
+                      </div>
+                    )}
+                    {fundamentals.financial.netIncome && (
+                      <div className="stat-card">
+                        <div className="stat-label">Net Income</div>
+                        <div className="stat-value">{formatCurrency(fundamentals.financial.netIncome, true)}</div>
+                      </div>
+                    )}
+                    {fundamentals.financial.profitMargins && (
+                      <div className="stat-card">
+                        <div className="stat-label">Profit Margin</div>
+                        <div className="stat-value text-success">{(fundamentals.financial.profitMargins * 100).toFixed(2)}%</div>
+                      </div>
+                    )}
+                    {fundamentals.financial.returnOnEquity && (
+                      <div className="stat-card">
+                        <div className="stat-label">ROE</div>
+                        <div className="stat-value text-success">{(fundamentals.financial.returnOnEquity * 100).toFixed(2)}%</div>
+                      </div>
+                    )}
+                    {fundamentals.financial.returnOnAssets && (
+                      <div className="stat-card">
+                        <div className="stat-label">ROA</div>
+                        <div className="stat-value">{(fundamentals.financial.returnOnAssets * 100).toFixed(2)}%</div>
+                      </div>
+                    )}
+                    {fundamentals.financial.revenueGrowth && (
+                      <div className="stat-card">
+                        <div className="stat-label">Revenue Growth</div>
+                        <div className={`stat-value ${fundamentals.financial.revenueGrowth > 0 ? 'text-success' : 'text-danger'}`}>
+                          {(fundamentals.financial.revenueGrowth * 100).toFixed(2)}%
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Earnings */}
+              {fundamentals.earnings && (
+                <div className="fundamental-group">
+                  <div className="fundamental-group-header">
+                    <TrendingUp size={20} />
+                    <h3>Earnings</h3>
+                  </div>
+                  <div className="fundamentals-grid">
+                    {fundamentals.earnings.earningsPerShare && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">EPS (TTM)</div>
+                          <div className="fundamental-value">{formatCurrency(fundamentals.earnings.earningsPerShare)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.earnings.forwardEps && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Forward EPS</div>
+                          <div className="fundamental-value">{formatCurrency(fundamentals.earnings.forwardEps)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.earnings.earningsQuarterlyGrowth && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Quarterly Growth</div>
+                          <div className={`fundamental-value ${fundamentals.earnings.earningsQuarterlyGrowth > 0 ? 'text-success' : 'text-danger'}`}>
+                            {(fundamentals.earnings.earningsQuarterlyGrowth * 100).toFixed(2)}%
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Dividends */}
+              {fundamentals.dividends && (fundamentals.dividends.dividendRate || fundamentals.dividends.dividendYield) && (
+                <div className="fundamental-group">
+                  <div className="fundamental-group-header">
+                    <DollarSign size={20} />
+                    <h3>Dividends</h3>
+                  </div>
+                  <div className="fundamentals-grid">
+                    {fundamentals.dividends.dividendRate && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Annual Dividend</div>
+                          <div className="fundamental-value text-success">{formatCurrency(fundamentals.dividends.dividendRate)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.dividends.dividendYield && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Dividend Yield</div>
+                          <div className="fundamental-value text-success">{(fundamentals.dividends.dividendYield * 100).toFixed(2)}%</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.dividends.payoutRatio && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Payout Ratio</div>
+                          <div className="fundamental-value">{(fundamentals.dividends.payoutRatio * 100).toFixed(2)}%</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Balance Sheet */}
+              {fundamentals.balanceSheet && (
+                <div className="fundamental-group">
+                  <div className="fundamental-group-header">
+                    <Landmark size={20} />
+                    <h3>Balance Sheet</h3>
+                  </div>
+                  <div className="fundamentals-grid">
+                    {fundamentals.balanceSheet.totalCash && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Total Cash</div>
+                          <div className="fundamental-value">{formatCurrency(fundamentals.balanceSheet.totalCash, true)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.balanceSheet.totalDebt && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Total Debt</div>
+                          <div className="fundamental-value">{formatCurrency(fundamentals.balanceSheet.totalDebt, true)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.balanceSheet.debtToEquity && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Debt/Equity</div>
+                          <div className="fundamental-value">{fundamentals.balanceSheet.debtToEquity.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.balanceSheet.currentRatio && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Current Ratio</div>
+                          <div className="fundamental-value">{fundamentals.balanceSheet.currentRatio.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Analyst Recommendations */}
+              {fundamentals.analysts && fundamentals.analysts.targetMeanPrice && (
+                <div className="fundamental-group">
+                  <div className="fundamental-group-header">
+                    <Target size={20} />
+                    <h3>Analyst Targets</h3>
+                  </div>
+                  <div className="fundamentals-grid">
+                    <div className="fundamental-card highlight-card">
+                      <div className="fundamental-content">
+                        <div className="fundamental-label">Target Price</div>
+                        <div className="fundamental-value">{formatCurrency(fundamentals.analysts.targetMeanPrice)}</div>
+                      </div>
+                    </div>
+                    {fundamentals.analysts.targetHighPrice && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">High Target</div>
+                          <div className="fundamental-value text-success">{formatCurrency(fundamentals.analysts.targetHighPrice)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.analysts.targetLowPrice && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Low Target</div>
+                          <div className="fundamental-value text-danger">{formatCurrency(fundamentals.analysts.targetLowPrice)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {fundamentals.analysts.recommendationKey && (
+                      <div className="fundamental-card">
+                        <div className="fundamental-content">
+                          <div className="fundamental-label">Recommendation</div>
+                          <div className="fundamental-value" style={{ textTransform: 'uppercase' }}>{fundamentals.analysts.recommendationKey}</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
