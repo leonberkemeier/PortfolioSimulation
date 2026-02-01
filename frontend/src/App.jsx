@@ -8,9 +8,7 @@ import PortfolioDetail from './components/pages/PortfolioDetail';
 import TradingInterface from './components/pages/TradingInterface';
 import ModelComparison from './components/pages/ModelComparison';
 import PortfolioCreationWizard from './components/pages/PortfolioCreationWizard';
-
-// Placeholder pages (to be implemented)
-const AnalyticsDashboard = () => <div className="p-8"><h1 className="text-3xl font-bold text-white">Analytics Dashboard - Coming Soon</h1></div>;
+import AnalyticsDashboard from './components/pages/AnalyticsDashboard';
 
 function App() {
   return (
