@@ -6,11 +6,11 @@ import './App.css';
 // Import real components
 import PortfolioDetail from './components/pages/PortfolioDetail';
 import TradingInterface from './components/pages/TradingInterface';
+import ModelComparison from './components/pages/ModelComparison';
+import PortfolioCreationWizard from './components/pages/PortfolioCreationWizard';
 
 // Placeholder pages (to be implemented)
 const AnalyticsDashboard = () => <div className="p-8"><h1 className="text-3xl font-bold text-white">Analytics Dashboard - Coming Soon</h1></div>;
-const ModelComparison = () => <div className="p-8"><h1 className="text-3xl font-bold text-white">Model Comparison - Coming Soon</h1></div>;
-const PortfolioCreationWizard = () => <div className="p-8"><h1 className="text-3xl font-bold text-white">Create Portfolio - Coming Soon</h1></div>;
 
 function App() {
   return (
