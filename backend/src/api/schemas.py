@@ -64,9 +64,9 @@ class PortfolioListResponse(BaseModel):
 class OrderRequest(BaseModel):
     """Request to place a buy or sell order."""
     ticker: str = Field(..., min_length=1, max_length=20)
-    asset_type: str = Field(..., regex="^(stock|crypto|bond|commodity)$")
+    asset_type: str = Field(..., pattern="^(stock|crypto|bond|commodity)$")
     quantity: float = Field(..., gt=0)
-    order_type: str = Field(..., regex="^(buy|sell)$")
+    order_type: str = Field(..., pattern="^(buy|sell)$")
     fee_structure_id: Optional[int] = Field(None)
 
 
@@ -213,7 +213,7 @@ class ErrorResponse(BaseModel):
 class ModelSignalRequest(BaseModel):
     """Request to record a model signal."""
     ticker: str = Field(..., min_length=1, max_length=20)
-    signal_type: str = Field(..., regex="^(buy|sell|hold)$")
+    signal_type: str = Field(..., pattern="^(buy|sell|hold)$")
     confidence: float = Field(..., ge=0, le=100)
     model_name: str = Field(..., min_length=1, max_length=100)
     signal_metadata: Optional[str] = None

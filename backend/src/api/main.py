@@ -5,9 +5,9 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from database import SessionLocal, get_db
-from schemas import HealthCheckResponse, ErrorResponse
-from routes import portfolios, orders, analytics
+from ..database import SessionLocal, get_db
+from .schemas import HealthCheckResponse, ErrorResponse
+from .routes import portfolios, orders, analytics
 
 # Create FastAPI app
 app = FastAPI(

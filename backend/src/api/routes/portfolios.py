@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from decimal import Decimal
 
-from database import get_db
-from models import Portfolio, FeeStructure, PortfolioFeeAssignment, PortfolioStatus
-from schemas import (
+from ...database import get_db
+from ...models import Portfolio, FeeStructure, PortfolioFeeAssignment, PortfolioStatus
+from ..schemas import (
     PortfolioCreateRequest, PortfolioUpdateRequest, PortfolioResponse,
     PortfolioListResponse
 )

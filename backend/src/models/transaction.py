@@ -4,7 +4,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Numeric, ForeignKey, E
 from sqlalchemy.orm import relationship
 import enum
 
-from database import Base
+from ..database import Base
 
 
 class AssetType(str, enum.Enum):

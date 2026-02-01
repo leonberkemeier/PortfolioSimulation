@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Tuple
 import statistics
 import json
 
-from models import (
+from ..models import (
     Portfolio, PortfolioSnapshot, PerformanceMetric, Holding, Transaction,
     OrderType, RiskMetric, AssetType
 )

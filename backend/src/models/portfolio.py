@@ -4,7 +4,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Numeric, Enum
 from sqlalchemy.orm import relationship
 import enum
 
-from database import Base
+from ..database import Base
 
 
 class PortfolioStatus(str, enum.Enum):

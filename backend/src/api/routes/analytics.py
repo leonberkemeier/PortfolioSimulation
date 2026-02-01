@@ -5,13 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from datetime import date
 
-from database import get_db
-from models import Portfolio, PerformanceMetric, PortfolioSnapshot, RiskMetric
-from schemas import (
+from ...database import get_db
+from ...models import Portfolio, PerformanceMetric, PortfolioSnapshot, RiskMetric
+from ..schemas import (
     PerformanceMetricResponse, PortfolioSnapshotResponse, RiskAnalyticsResponse,
     SnapshotHistoryResponse, AllocationResponse
 )
-from services.performance_calculator import PerformanceCalculator
+from ...services.performance_calculator import PerformanceCalculator
 
 router = APIRouter()
 

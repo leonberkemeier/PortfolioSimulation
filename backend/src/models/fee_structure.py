@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 import enum
 
-from database import Base
+from ..database import Base
 
 
 class FeeType(str, enum.Enum):

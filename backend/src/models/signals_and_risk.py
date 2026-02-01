@@ -3,7 +3,7 @@ from decimal import Decimal
 from sqlalchemy import Column, Integer, String, DateTime, Date, Numeric, ForeignKey, Text
 from sqlalchemy.orm import relationship
 
-from database import Base
+from ..database import Base
 
 
 class ModelSignal(Base):

@@ -6,8 +6,8 @@ from decimal import Decimal
 from typing import Optional, Tuple
 from enum import Enum
 
-from models import Portfolio, Holding, Transaction, OrderType, AssetType, FeeStructure
-from price_lookup import PriceLookup
+from ..models import Portfolio, Holding, Transaction, OrderType, AssetType, FeeStructure
+from .price_lookup import PriceLookup
 
 
 class OrderStatus(str, Enum):

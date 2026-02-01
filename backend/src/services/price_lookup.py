@@ -6,8 +6,8 @@ from typing import Optional, Dict, Tuple
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from config import FINANCIAL_DATA_DB_URL
-from models import AssetType
+from ..config import FINANCIAL_DATA_DB_URL
+from ..models import AssetType
 
 
 class PriceLookup:
