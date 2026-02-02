@@ -79,6 +79,14 @@ export const analytics = {
     api.post(`/analytics/${portfolioId}/snapshot`, { snapshot_date: date }),
   calculateMetrics: (portfolioId, date = null) =>
     api.post(`/analytics/${portfolioId}/metrics`, { metric_date: date }),
+  compare: (symbols, period = '1mo', interval = '1d') =>
+    api.get('/analytics/compare', {
+      params: {
+        symbols: Array.isArray(symbols) ? symbols.join(',') : symbols,
+        period,
+        interval
+      }
+    }),
 };
 
 // ============ Price Alerts ============

@@ -398,3 +398,115 @@ async def get_advanced_metrics(
             "max_drawdown": "Low Risk (<10%)" if abs(metrics.get('max_drawdown_pct', 100)) < 10 else "Moderate (10-25%)" if abs(metrics.get('max_drawdown_pct', 100)) < 25 else "High (25-50%)" if abs(metrics.get('max_drawdown_pct', 100)) < 50 else "Very High (>50%)"
         }
     }
+
+
+@router.get(
+    "/compare",
+    summary="Compare multiple symbols on a normalized chart",
+    responses={
+        200: {"description": "Comparison data returned successfully"},
+        400: {"description": "Invalid request parameters"},
+        500: {"description": "Server error"}
+    }
+)
+async def compare_symbols(
+    symbols: str = Query(..., description="Comma-separated list of symbols (e.g., 'AAPL,MSFT,GOOGL')"),
+    period: str = Query("1mo", description="Time period (1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, max)"),
+    interval: str = Query("1d", description="Data interval (1m, 5m, 15m, 1h, 1d, 1wk, 1mo)")
+):
+    """
+    Compare multiple symbols with normalized percentage change from start.
+    
+    Returns data normalized to percentage change from the first data point,
+    allowing comparison of assets with different price scales.
+    """
+    try:
+        # Parse symbols
+        symbol_list = [s.strip().upper() for s in symbols.split(',')]
+        
+        if len(symbol_list) < 2:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please provide at least 2 symbols to compare"
+            )
+        
+        if len(symbol_list) > 10:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Maximum 10 symbols allowed for comparison"
+            )
+        
+        # Fetch data for all symbols
+        comparison_data = []
+        common_dates = None
+        
+        for symbol in symbol_list:
+            try:
+                stock = yf.Ticker(symbol)
+                hist = stock.history(period=period, interval=interval)
+                
+                if hist.empty:
+                    continue
+                
+                # Get closing prices
+                closes = hist['Close'].dropna()
+                
+                if len(closes) == 0:
+                    continue
+                
+                # Calculate percentage change from first value
+                first_price = closes.iloc[0]
+                pct_changes = ((closes - first_price) / first_price * 100).values
+                
+                # Store dates for alignment
+                dates = [idx.isoformat() for idx in closes.index]
+                
+                # If this is the first symbol, set common dates
+                if common_dates is None:
+                    common_dates = dates
+                
+                comparison_data.append({
+                    "symbol": symbol,
+                    "name": symbol,  # Could fetch full name from yfinance info
+                    "data": [
+                        {
+                            "date": date,
+                            "pct_change": float(pct_change),
+                            "price": float(price)
+                        }
+                        for date, pct_change, price in zip(dates, pct_changes, closes.values)
+                    ],
+                    "current_price": float(closes.iloc[-1]),
+                    "start_price": float(first_price),
+                    "total_change_pct": float(pct_changes[-1]),
+                    "total_change": float(closes.iloc[-1] - first_price)
+                })
+                
+            except Exception as e:
+                print(f"Error fetching data for {symbol}: {e}")
+                continue
+        
+        if len(comparison_data) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No valid data found for the provided symbols"
+            )
+        
+        return {
+            "symbols": symbol_list,
+            "period": period,
+            "interval": interval,
+            "data": comparison_data,
+            "chart_title": f"Comparison: {', '.join(symbol_list)}",
+            "y_axis_label": "% Change from Start"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in compare_symbols: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error comparing symbols: {str(e)}"
+        )
+

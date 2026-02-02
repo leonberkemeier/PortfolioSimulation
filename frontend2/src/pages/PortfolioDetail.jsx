@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, DollarSign, Activity, PieChart, BarChart3, ShoppingCart, X } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -16,10 +16,47 @@ export default function PortfolioDetail() {
   const [error, setError] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  // Auto-refresh states
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState(30); // seconds
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [nextUpdate, setNextUpdate] = useState(null);
+  const portfolioHeaderRef = useRef(null);
 
   useEffect(() => {
     fetchPortfolioData();
   }, [id]);
+
+  // Auto-refresh effect
+  useEffect(() => {
+    let intervalId;
+    let countdownId;
+    
+    if (autoRefresh && id) {
+      // Set initial next update time
+      setNextUpdate(Date.now() + refreshInterval * 1000);
+      
+      // Refresh data at specified interval
+      intervalId = setInterval(() => {
+        console.log('🔄 Auto-refreshing portfolio data...');
+        fetchPortfolioData();
+        setNextUpdate(Date.now() + refreshInterval * 1000);
+      }, refreshInterval * 1000);
+      
+      // Update countdown every second
+      countdownId = setInterval(() => {
+        setNextUpdate(prev => prev ? prev - 1000 : 0);
+      }, 1000);
+    } else {
+      setNextUpdate(null);
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (countdownId) clearInterval(countdownId);
+    };
+  }, [autoRefresh, refreshInterval, id]);
 
   const fetchPortfolioData = async () => {
     try {
@@ -51,6 +88,17 @@ export default function PortfolioDetail() {
       setError(`Failed to load portfolio: ${err.message}`);
     } finally {
       setLoading(false);
+      setLastUpdated(Date.now());
+      
+      // Trigger pulse animation
+      if (portfolioHeaderRef.current && autoRefresh) {
+        portfolioHeaderRef.current.classList.add('updating');
+        setTimeout(() => {
+          if (portfolioHeaderRef.current) {
+            portfolioHeaderRef.current.classList.remove('updating');
+          }
+        }, 500);
+      }
     }
   };
 
@@ -98,7 +146,19 @@ export default function PortfolioDetail() {
     });
   };
 
-  if (loading) {
+  const formatTime = (timestamp) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
+  const getTimeUntilUpdate = () => {
+    if (!nextUpdate) return 0;
+    const seconds = Math.max(0, Math.floor((nextUpdate - Date.now()) / 1000));
+    return seconds;
+  };
+
+  if (loading && !portfolio) {
     return (
       <div className="loading-detail">
         <div className="spinner"></div>
@@ -170,7 +230,7 @@ export default function PortfolioDetail() {
       </div>
 
       {/* Header */}
-      <div className="portfolio-detail-header">
+      <div className="portfolio-detail-header" ref={portfolioHeaderRef}>
         <div className="portfolio-detail-title">
           <div>
             <h1>{portfolio.name}</h1>
@@ -181,6 +241,42 @@ export default function PortfolioDetail() {
               {portfolio.model_name || 'Manual'}
             </div>
             <div className="badge active">Active</div>
+          </div>
+        </div>
+
+        {/* Auto-Refresh Controls */}
+        <div className="auto-refresh-controls">
+          <div className="refresh-toggle">
+            <button
+              className={`toggle-btn ${autoRefresh ? 'active' : ''}`}
+              onClick={() => setAutoRefresh(!autoRefresh)}
+            >
+              <Activity size={16} className={autoRefresh ? 'spinning' : ''} />
+              {autoRefresh ? 'Live' : 'Paused'}
+            </button>
+            {autoRefresh && (
+              <span className="refresh-status">
+                Updates in {getTimeUntilUpdate()}s
+              </span>
+            )}
+            {lastUpdated && (
+              <span className="last-update">
+                Updated: {formatTime(lastUpdated)}
+              </span>
+            )}
+          </div>
+          <div className="refresh-interval-selector">
+            <label>Interval:</label>
+            <select
+              value={refreshInterval}
+              onChange={(e) => setRefreshInterval(Number(e.target.value))}
+              disabled={!autoRefresh}
+            >
+              <option value={15}>15s</option>
+              <option value={30}>30s</option>
+              <option value={60}>1m</option>
+              <option value={300}>5m</option>
+            </select>
           </div>
         </div>
 

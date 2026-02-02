@@ -106,6 +106,7 @@ const MarketView = () => {
   const [timeRange, setTimeRange] = useState('1d');
   const [chartType, setChartType] = useState('area'); // 'area' or 'candlestick'
   const [loading, setLoading] = useState(false);
+  const [isBackgroundRefresh, setIsBackgroundRefresh] = useState(false);
   const [error, setError] = useState(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [showAlertsList, setShowAlertsList] = useState(false);
@@ -154,14 +155,22 @@ const MarketView = () => {
       
       // Refresh data at specified interval
       intervalId = setInterval(() => {
+        console.log('🔄 Auto-refreshing market data...');
+        setIsBackgroundRefresh(true);
         fetchQuoteAndChart();
+        // Check alerts after fetching new data
+        if (symbol) {
+          alertsApi.check(symbol).catch(err => console.error('Alert check failed:', err));
+        }
         setNextUpdate(Date.now() + refreshInterval * 1000);
       }, refreshInterval * 1000);
       
       // Update countdown every second
       countdownId = setInterval(() => {
-        setNextUpdate(prev => prev - 1000);
+        setNextUpdate(prev => prev ? prev - 1000 : 0);
       }, 1000);
+    } else {
+      setNextUpdate(null);
     }
     
     return () => {
@@ -195,7 +204,9 @@ const MarketView = () => {
   };
 
   const fetchQuoteAndChart = async () => {
-    setLoading(true);
+    if (!isBackgroundRefresh) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -203,6 +214,7 @@ const MarketView = () => {
 
       // Fetch current quote
       const quoteResponse = await api.get(`/orders/quote/${yahooSymbol}`);
+      console.log('📊 Quote updated:', quoteResponse.data);
       setQuote(quoteResponse.data);
 
       // Fetch fundamentals (only for stocks)
@@ -247,6 +259,7 @@ const MarketView = () => {
       setError(err.response?.data?.detail || 'Failed to load market data');
     } finally {
       setLoading(false);
+      setIsBackgroundRefresh(false);
       setLastUpdated(Date.now());
       
       // Trigger pulse animation

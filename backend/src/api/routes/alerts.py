@@ -13,7 +13,7 @@ from ...models.alert import PriceAlert, AlertCondition, AlertStatus
 from ...services.alert_service import AlertService
 
 
-router = APIRouter(prefix="/alerts", tags=["alerts"])
+router = APIRouter()
 
 
 # Pydantic schemas

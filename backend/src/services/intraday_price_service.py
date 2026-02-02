@@ -87,7 +87,8 @@ class IntradayPriceService:
             day_open = float(data[open_col].iloc[0])
             day_high = float(data[high_col].max())
             day_low = float(data[low_col].min())
-            daily_change = ((current_price - day_open) / day_open) * 100
+            daily_change_pct = ((current_price - day_open) / day_open) * 100
+            daily_change = current_price - day_open  # Absolute dollar change
             
             # Build chart data (timestamps, prices)
             chart_data = []
@@ -115,7 +116,8 @@ class IntradayPriceService:
                 'day_open': day_open,
                 'day_high': day_high,
                 'day_low': day_low,
-                'daily_change_pct': daily_change,
+                'daily_change': daily_change,
+                'daily_change_pct': daily_change_pct,
                 'volume': volume,
                 'chart_data': chart_data,
                 'timestamp': datetime.now().isoformat(),
