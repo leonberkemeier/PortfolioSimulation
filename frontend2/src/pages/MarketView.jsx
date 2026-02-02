@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { 
   Search, TrendingUp, TrendingDown, Activity, BarChart3, Calendar, BarChart2, 
@@ -109,6 +109,13 @@ const MarketView = () => {
   const [error, setError] = useState(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [showAlertsList, setShowAlertsList] = useState(false);
+  
+  // Auto-refresh states
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState(30); // seconds
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [nextUpdate, setNextUpdate] = useState(null);
+  const quoteHeaderRef = useRef(null);
 
   // Load symbol and asset type from URL parameters
   useEffect(() => {
@@ -135,6 +142,33 @@ const MarketView = () => {
       fetchQuoteAndChart();
     }
   }, [symbol, timeRange]);
+
+  // Auto-refresh effect
+  useEffect(() => {
+    let intervalId;
+    let countdownId;
+    
+    if (autoRefresh && symbol) {
+      // Set initial next update time
+      setNextUpdate(Date.now() + refreshInterval * 1000);
+      
+      // Refresh data at specified interval
+      intervalId = setInterval(() => {
+        fetchQuoteAndChart();
+        setNextUpdate(Date.now() + refreshInterval * 1000);
+      }, refreshInterval * 1000);
+      
+      // Update countdown every second
+      countdownId = setInterval(() => {
+        setNextUpdate(prev => prev - 1000);
+      }, 1000);
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (countdownId) clearInterval(countdownId);
+    };
+  }, [autoRefresh, refreshInterval, symbol]);
 
   const formatSymbolForYahoo = (sym, type) => {
     let yahooSymbol = sym.toUpperCase();
@@ -213,6 +247,17 @@ const MarketView = () => {
       setError(err.response?.data?.detail || 'Failed to load market data');
     } finally {
       setLoading(false);
+      setLastUpdated(Date.now());
+      
+      // Trigger pulse animation
+      if (quoteHeaderRef.current && autoRefresh) {
+        quoteHeaderRef.current.classList.add('updating');
+        setTimeout(() => {
+          if (quoteHeaderRef.current) {
+            quoteHeaderRef.current.classList.remove('updating');
+          }
+        }, 500);
+      }
     }
   };
 
@@ -265,6 +310,18 @@ const MarketView = () => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
+  const formatTime = (timestamp) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
+  const getTimeUntilUpdate = () => {
+    if (!nextUpdate) return 0;
+    const seconds = Math.max(0, Math.floor((nextUpdate - Date.now()) / 1000));
+    return seconds;
+  };
+
   const isPositive = quote && quote.changePercent >= 0;
 
   return (
@@ -296,7 +353,7 @@ const MarketView = () => {
         </div>
 
         {quote && (
-          <div className="quote-header">
+          <div className="quote-header" ref={quoteHeaderRef}>
             <div className="quote-symbol-section">
               <h1 className="quote-symbol">{quote.symbol}</h1>
               <span className="quote-name">{quote.name}</span>
@@ -341,11 +398,48 @@ const MarketView = () => {
             </div>
           </div>
         )}
+
+        {/* Auto-Refresh Controls */}
+        {quote && (
+          <div className="auto-refresh-controls">
+            <div className="refresh-toggle">
+              <button
+                className={`toggle-btn ${autoRefresh ? 'active' : ''}`}
+                onClick={() => setAutoRefresh(!autoRefresh)}
+              >
+                <Activity size={16} className={autoRefresh ? 'spinning' : ''} />
+                {autoRefresh ? 'Live' : 'Paused'}
+              </button>
+              {autoRefresh && (
+                <span className="refresh-status">
+                  Updates in {getTimeUntilUpdate()}s
+                </span>
+              )}
+              {lastUpdated && (
+                <span className="last-update">
+                  Updated: {formatTime(lastUpdated)}
+                </span>
+              )}
+            </div>
+            <div className="refresh-interval-selector">
+              <label>Interval:</label>
+              <select
+                value={refreshInterval}
+                onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                disabled={!autoRefresh}
+              >
+                <option value={15}>15s</option>
+                <option value={30}>30s</option>
+                <option value={60}>1m</option>
+                <option value={300}>5m</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Time Range Selector */}
-      <div className="time-range-selector">
-        {timeRanges.map((range) => (
+      <div className="time-range-selector">{timeRanges.map((range) => (
           <button
             key={range.value}
             className={`range-btn ${timeRange === range.value ? 'active' : ''}`}
