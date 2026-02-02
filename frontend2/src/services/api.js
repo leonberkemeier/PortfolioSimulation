@@ -73,6 +73,8 @@ export const analytics = {
     api.get(`/analytics/${portfolioId}/snapshots`, { params: { skip, limit } }),
   risk: (portfolioId) =>
     api.get(`/analytics/${portfolioId}/risk`),
+  riskAnalysis: (portfolioId) =>
+    api.get(`/analytics/${portfolioId}/risk-analysis`),
   allocation: (portfolioId) =>
     api.get(`/analytics/${portfolioId}/allocation`),
   createSnapshot: (portfolioId, date = null) =>

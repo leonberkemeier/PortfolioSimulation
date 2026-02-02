@@ -510,3 +510,279 @@ async def compare_symbols(
             detail=f"Error comparing symbols: {str(e)}"
         )
 
+
+@router.get(
+    "/{portfolio_id}/risk-analysis",
+    summary="Get comprehensive portfolio risk analysis",
+    responses={
+        200: {"description": "Risk analysis data returned successfully"},
+        404: {"description": "Portfolio not found"},
+        500: {"description": "Server error"}
+    }
+)
+async def get_comprehensive_risk_analysis(
+    portfolio_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get comprehensive risk analysis including:
+    - Sector allocation
+    - Individual stock volatilities
+    - Correlation matrix
+    - Portfolio diversification score
+    - Beta and risk metrics
+    """
+    from ...models import Holding, AssetType
+    from decimal import Decimal
+    import numpy as np
+    import pandas as pd
+    
+    try:
+        portfolio = db.query(Portfolio).get(portfolio_id)
+        if not portfolio:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Portfolio not found"
+            )
+        
+        holdings = db.query(Holding).filter_by(portfolio_id=portfolio_id).all()
+        
+        if not holdings:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No holdings found in portfolio"
+            )
+        
+        # Calculate total portfolio value
+        total_value = sum(float(h.current_price) * float(h.quantity) for h in holdings)
+        
+        if total_value == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Portfolio has zero value"
+            )
+        
+        # 1. SECTOR ALLOCATION (for stocks only)
+        sector_allocation = {}
+        stock_symbols = []
+        
+        for holding in holdings:
+            if holding.asset_type == AssetType.STOCK:
+                holding_value = float(holding.current_price) * float(holding.quantity)
+                pct_of_portfolio = (holding_value / total_value) * 100
+                stock_symbols.append(holding.ticker)
+                
+                # Fetch sector info from yfinance
+                try:
+                    stock = yf.Ticker(holding.ticker)
+                    sector = stock.info.get('sector', 'Unknown')
+                    
+                    if sector in sector_allocation:
+                        sector_allocation[sector] += pct_of_portfolio
+                    else:
+                        sector_allocation[sector] = pct_of_portfolio
+                except Exception as e:
+                    print(f"Error fetching sector for {holding.ticker}: {e}")
+                    if 'Unknown' in sector_allocation:
+                        sector_allocation['Unknown'] += pct_of_portfolio
+                    else:
+                        sector_allocation['Unknown'] = pct_of_portfolio
+        
+        # 2. ASSET TYPE ALLOCATION
+        asset_allocation = {}
+        for asset_type in AssetType:
+            asset_total = sum(
+                float(h.current_price) * float(h.quantity)
+                for h in holdings
+                if h.asset_type == asset_type
+            )
+            if asset_total > 0:
+                asset_allocation[asset_type.value] = (asset_total / total_value) * 100
+        
+        # 3. INDIVIDUAL HOLDING VOLATILITIES & BETAS
+        holdings_risk = []
+        historical_returns = {}
+        
+        for holding in holdings:
+            try:
+                # Fetch historical data (90 days)
+                if holding.asset_type == AssetType.CRYPTO:
+                    ticker = f"{holding.ticker}-USD"
+                else:
+                    ticker = holding.ticker
+                
+                stock = yf.Ticker(ticker)
+                hist = stock.history(period="3mo")
+                
+                if not hist.empty and len(hist) > 1:
+                    # Calculate daily returns
+                    returns = hist['Close'].pct_change().dropna()
+                    historical_returns[holding.ticker] = returns
+                    
+                    # Calculate volatility (annualized standard deviation)
+                    volatility = float(returns.std() * np.sqrt(252) * 100)  # Annualized %
+                    
+                    # Get beta if available
+                    beta = stock.info.get('beta')
+                    
+                    holding_value = float(holding.current_price) * float(holding.quantity)
+                    pct_of_portfolio = (holding_value / total_value) * 100
+                    
+                    holdings_risk.append({
+                        "symbol": holding.ticker,
+                        "asset_type": holding.asset_type.value,
+                        "volatility_pct": round(volatility, 2),
+                        "beta": round(float(beta), 2) if beta else None,
+                        "weight_pct": round(pct_of_portfolio, 2),
+                        "value": round(holding_value, 2)
+                    })
+            except Exception as e:
+                print(f"Error calculating risk for {holding.ticker}: {e}")
+                continue
+        
+        # 4. CORRELATION MATRIX (for holdings with historical data)
+        correlation_matrix = {}
+        if len(historical_returns) >= 2:
+            # Create DataFrame from returns
+            returns_df = pd.DataFrame(historical_returns)
+            
+            # Calculate correlation matrix
+            corr_matrix = returns_df.corr()
+            
+            # Convert to dictionary format
+            for symbol1 in corr_matrix.index:
+                correlation_matrix[symbol1] = {}
+                for symbol2 in corr_matrix.columns:
+                    corr_value = corr_matrix.loc[symbol1, symbol2]
+                    if not np.isnan(corr_value):
+                        correlation_matrix[symbol1][symbol2] = round(float(corr_value), 3)
+        
+        # 5. PORTFOLIO-LEVEL METRICS
+        portfolio_volatility = None
+        portfolio_beta = None
+        diversification_score = 0
+        
+        if len(historical_returns) >= 2:
+            # Calculate portfolio returns (weighted average)
+            portfolio_returns = pd.Series(0.0, index=list(historical_returns.values())[0].index)
+            
+            for holding in holdings:
+                if holding.ticker in historical_returns:
+                    weight = (float(holding.current_price) * float(holding.quantity)) / total_value
+                    portfolio_returns += historical_returns[holding.ticker] * weight
+            
+            # Portfolio volatility
+            portfolio_volatility = float(portfolio_returns.std() * np.sqrt(252) * 100)
+            
+            # Calculate diversification score (0-100, higher is better)
+            # Based on: average correlation, number of holdings, sector concentration
+            
+            # Average correlation (lower is better for diversification)
+            avg_correlation = 0
+            if len(correlation_matrix) >= 2:
+                all_corrs = []
+                for s1 in correlation_matrix:
+                    for s2 in correlation_matrix[s1]:
+                        if s1 != s2:
+                            all_corrs.append(abs(correlation_matrix[s1][s2]))
+                if all_corrs:
+                    avg_correlation = np.mean(all_corrs)
+            
+            # Number of holdings score (more is better, diminishing returns after 15)
+            num_holdings = len(holdings)
+            holdings_score = min(num_holdings / 15, 1.0) * 35
+            
+            # Correlation score (lower correlation = higher score)
+            correlation_score = max(0, (1 - avg_correlation)) * 35
+            
+            # Sector concentration (more sectors = better)
+            sector_score = min(len(sector_allocation) / 8, 1.0) * 30
+            
+            diversification_score = holdings_score + correlation_score + sector_score
+        
+        # 6. CONCENTRATION RISK (Top 5 holdings)
+        top_holdings = sorted(
+            [
+                {
+                    "symbol": h.ticker,
+                    "weight_pct": ((float(h.current_price) * float(h.quantity)) / total_value) * 100
+                }
+                for h in holdings
+            ],
+            key=lambda x: x['weight_pct'],
+            reverse=True
+        )[:5]
+        
+        # Calculate concentration ratio (sum of top 5)
+        concentration_ratio = sum(h['weight_pct'] for h in top_holdings)
+        
+        return {
+            "portfolio_id": portfolio_id,
+            "portfolio_name": portfolio.name,
+            "total_value": round(total_value, 2),
+            "analysis_date": date.today().isoformat(),
+            
+            # Allocation Data
+            "sector_allocation": [
+                {"sector": sector, "percentage": round(pct, 2)}
+                for sector, pct in sorted(sector_allocation.items(), key=lambda x: x[1], reverse=True)
+            ],
+            "asset_allocation": [
+                {"asset_type": asset, "percentage": round(pct, 2)}
+                for asset, pct in sorted(asset_allocation.items(), key=lambda x: x[1], reverse=True)
+            ],
+            
+            # Individual Holdings Risk
+            "holdings_risk": holdings_risk,
+            
+            # Correlation Analysis
+            "correlation_matrix": correlation_matrix,
+            
+            # Portfolio-Level Metrics
+            "portfolio_metrics": {
+                "volatility_pct": round(portfolio_volatility, 2) if portfolio_volatility else None,
+                "beta": round(portfolio_beta, 2) if portfolio_beta else None,
+                "diversification_score": round(diversification_score, 1),
+                "number_of_holdings": len(holdings),
+                "number_of_sectors": len(sector_allocation),
+                "concentration_ratio": round(concentration_ratio, 2)
+            },
+            
+            # Concentration Risk
+            "top_holdings": top_holdings,
+            
+            # Risk Assessment
+            "risk_assessment": {
+                "diversification": (
+                    "Excellent" if diversification_score >= 80 else
+                    "Good" if diversification_score >= 60 else
+                    "Moderate" if diversification_score >= 40 else
+                    "Poor"
+                ),
+                "concentration": (
+                    "Low Risk" if concentration_ratio < 30 else
+                    "Moderate Risk" if concentration_ratio < 50 else
+                    "High Risk" if concentration_ratio < 70 else
+                    "Very High Risk"
+                ),
+                "volatility": (
+                    "Low" if portfolio_volatility and portfolio_volatility < 15 else
+                    "Moderate" if portfolio_volatility and portfolio_volatility < 25 else
+                    "High" if portfolio_volatility else
+                    "Unknown"
+                )
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in risk analysis: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error analyzing portfolio risk: {str(e)}"
+        )
+
+
