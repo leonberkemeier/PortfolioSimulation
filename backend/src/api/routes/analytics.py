@@ -45,9 +45,19 @@ async def get_performance_metrics(
     )
 
     if not metric:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No performance metrics available"
+        # Return empty metrics instead of 404 error
+        return JSONResponse(
+            status_code=200,
+            content={
+                "sharpe_ratio": None,
+                "sortino_ratio": None,
+                "max_drawdown": None,
+                "volatility": None,
+                "win_rate": None,
+                "avg_win": None,
+                "avg_loss": None,
+                "total_trades": 0
+            }
         )
 
     return PerformanceMetricResponse.from_orm(metric)

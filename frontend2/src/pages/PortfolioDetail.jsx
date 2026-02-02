@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, DollarSign, Activity, PieChart, BarChart3, ShoppingCart, X, Shield } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { portfolios } from '../services/api';
+import { portfolios, analytics } from '../services/api';
 import '../styles/PortfolioDetail.css';
 
 export default function PortfolioDetail() {
@@ -12,6 +12,7 @@ export default function PortfolioDetail() {
   const [holdings, setHoldings] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [navHistory, setNavHistory] = useState([]);
+  const [performanceMetrics, setPerformanceMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -80,7 +81,33 @@ export default function PortfolioDetail() {
       // Fetch NAV history
       const navResponse = await portfolios.getNavHistory(id);
       console.log('NAV History:', navResponse.data);
-      setNavHistory(navResponse.data.history || []);
+      const history = navResponse.data.history || navResponse.data.snapshots || [];
+      
+      // If no history exists, create initial snapshot
+      if (history.length === 0 && holdingsResponse.data?.length > 0) {
+        console.log('No NAV history found, creating initial snapshot...');
+        try {
+          await analytics.createSnapshot(id);
+          // Fetch NAV history again
+          const newNavResponse = await portfolios.getNavHistory(id);
+          setNavHistory(newNavResponse.data.history || newNavResponse.data.snapshots || []);
+        } catch (snapshotErr) {
+          console.warn('Could not create snapshot:', snapshotErr);
+          setNavHistory([]);
+        }
+      } else {
+        setNavHistory(history);
+      }
+
+      // Fetch performance metrics (Sharpe, Sortino, Volatility, etc.)
+      try {
+        const metricsResponse = await analytics.performance(id);
+        console.log('Performance Metrics:', metricsResponse.data);
+        setPerformanceMetrics(metricsResponse.data);
+      } catch (metricsErr) {
+        console.warn('Could not fetch performance metrics:', metricsErr);
+        setPerformanceMetrics(null);
+      }
 
       setError(null);
     } catch (err) {
@@ -122,6 +149,17 @@ export default function PortfolioDetail() {
       currency: 'USD',
       minimumFractionDigits: 2,
     }).format(value);
+  };
+
+  const formatCurrencySplit = (value) => {
+    const formatted = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(value);
+    // Split into symbol and amount (e.g., "$1,234.56" -> ["$", "1,234.56"])
+    const match = formatted.match(/^([^0-9-]+)(.*)/);
+    return match ? { symbol: match[1], amount: match[2] } : { symbol: '$', amount: formatted };
   };
 
   const formatPercent = (value) => {
@@ -290,35 +328,64 @@ export default function PortfolioDetail() {
 
         {/* Key Metrics */}
         <div className="portfolio-metrics">
-          {/* Total Portfolio Value - Most Prominent */}
-          <div className="metric-item highlight">
-            <div className="metric-label">Total Value</div>
-            <div className="metric-value large">{formatCurrency(parseFloat(portfolio.nav || 0))}</div>
-          </div>
-          
-          {/* Asset Breakdown */}
-          <div className="metric-item">
-            <div className="metric-label">Holdings</div>
-            <div className="metric-value">
-              {formatCurrency(holdings.reduce((sum, h) => sum + parseFloat(h.current_value || 0), 0))}
+          {/* First Row - Financial Values */}
+          <div className="metrics-row">
+            <div className="metric-item">
+              <div className="metric-label">Total Value</div>
+              <div className="metric-value large">
+                {formatCurrency(parseFloat(portfolio.nav || 0))}
+              </div>
+            </div>
+            
+            <div className="metric-item">
+              <div className="metric-label">Holdings</div>
+              <div className="metric-value">
+                {formatCurrency(holdings.reduce((sum, h) => sum + parseFloat(h.current_value || 0), 0))}
+              </div>
+            </div>
+            
+            <div className="metric-item">
+              <div className="metric-label">Cash</div>
+              <div className="metric-value">
+                {formatCurrency(parseFloat(portfolio.current_cash || 0))}
+              </div>
             </div>
           </div>
-          <div className="metric-item">
-            <div className="metric-label">Cash</div>
-            <div className="metric-value">{formatCurrency(parseFloat(portfolio.current_cash || 0))}</div>
-          </div>
-          
-          {/* Performance Metrics */}
-          <div className="metric-item">
-            <div className="metric-label">Return</div>
-            <div className={`metric-value ${totalReturn >= 0 ? 'text-success' : 'text-danger'}`}>
-              {totalReturn >= 0 ? '+' : ''}{formatCurrency(totalReturn)}
+
+          {/* Second Row - Performance Metrics */}
+          <div className="metrics-row">
+            <div className="metric-item">
+              <div className="metric-label">Return</div>
+              <div className={`metric-value ${totalReturn >= 0 ? 'text-success' : 'text-danger'}`}>
+                {totalReturn >= 0 ? '+' : ''}{formatCurrency(totalReturn)}
+              </div>
             </div>
-          </div>
-          <div className="metric-item">
-            <div className="metric-label">Return %</div>
-            <div className={`metric-value ${totalReturnPct >= 0 ? 'text-success' : 'text-danger'}`}>
-              {totalReturnPct >= 0 ? '+' : ''}{formatPercent(totalReturnPct)}
+            
+            <div className="metric-item">
+              <div className="metric-label">Return %</div>
+              <div className={`metric-value ${totalReturnPct >= 0 ? 'text-success' : 'text-danger'}`}>
+                {totalReturnPct >= 0 ? '+' : ''}{formatPercent(totalReturnPct)}
+              </div>
+            </div>
+
+            <div className="metric-item">
+              <div className="metric-label">Sharpe Ratio</div>
+              <div className="metric-value">
+                {performanceMetrics?.sharpe_ratio 
+                  ? parseFloat(performanceMetrics.sharpe_ratio).toFixed(2)
+                  : 'N/A'}
+              </div>
+              <div className="metric-subtitle">Risk-adjusted return</div>
+            </div>
+
+            <div className="metric-item">
+              <div className="metric-label">Volatility</div>
+              <div className="metric-value">
+                {performanceMetrics?.volatility 
+                  ? `${(parseFloat(performanceMetrics.volatility) * 100).toFixed(2)}%`
+                  : 'N/A'}
+              </div>
+              <div className="metric-subtitle">Annualized</div>
             </div>
           </div>
         </div>
