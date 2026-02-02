@@ -10,6 +10,7 @@ import MarketView from './pages/MarketView';
 import TechnicalAnalysis from './pages/TechnicalAnalysis';
 import ChartComparison from './pages/ChartComparison';
 import PortfolioRiskDashboard from './pages/PortfolioRiskDashboard';
+import ProjectInfo from './pages/ProjectInfo';
 import './styles/global.css';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="/create-portfolio" element={<PortfolioCreationWizard />} />
           <Route path="/analytics/:id" element={<AnalyticsDashboard />} />
           <Route path="/assets" element={<AssetReference />} />
+          <Route path="/info" element={<ProjectInfo />} />
           {/* Placeholder routes for future pages */}
           <Route path="/models" element={<Dashboard />} />
         </Route>

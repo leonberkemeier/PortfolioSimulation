@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BarChart3, Layers, Plus, TrendingUp, Zap, LineChart, Book, Activity, BarChart2, Menu, X, GitCompare } from 'lucide-react';
+import { BarChart3, Layers, Plus, TrendingUp, Zap, LineChart, Book, Activity, BarChart2, Menu, X, GitCompare, Info } from 'lucide-react';
 import '../styles/Layout.css';
 
 export default function Layout() {
@@ -13,6 +13,7 @@ export default function Layout() {
     { path: '/compare', icon: GitCompare, label: 'Compare Charts' },
     { path: '/technical', icon: BarChart2, label: 'Technical Analysis' },
     { path: '/assets', icon: Book, label: 'Asset Reference' },
+    { path: '/info', icon: Info, label: 'Project Info' },
     { path: '/models', icon: Layers, label: 'Models' },
     { path: '/create-portfolio', icon: Plus, label: 'New Portfolio' },
   ];
