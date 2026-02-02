@@ -7,8 +7,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from database import init_db, SessionLocal
-from models import FeeStructure, FeeType
+from src.database import init_db, SessionLocal
+from src.models import FeeStructure, FeeType
 
 
 def seed_fee_structures():

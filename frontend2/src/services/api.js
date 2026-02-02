@@ -81,4 +81,25 @@ export const analytics = {
     api.post(`/analytics/${portfolioId}/metrics`, { metric_date: date }),
 };
 
+// ============ Price Alerts ============
+export const alerts = {
+  list: (symbol = null, status = null, activeOnly = false) => {
+    const params = {};
+    if (symbol) params.symbol = symbol;
+    if (status) params.status = status;
+    if (activeOnly) params.active_only = true;
+    return api.get('/alerts', { params });
+  },
+  create: (data) => api.post('/alerts', data),
+  getById: (id) => api.get(`/alerts/${id}`),
+  update: (id, data) => api.put(`/alerts/${id}`, data),
+  delete: (id) => api.delete(`/alerts/${id}`),
+  disable: (id) => api.post(`/alerts/${id}/disable`),
+  enable: (id) => api.post(`/alerts/${id}/enable`),
+  check: (symbol = null) => {
+    const params = symbol ? { symbol } : {};
+    return api.post('/alerts/check', null, { params });
+  },
+};
+
 export default api;

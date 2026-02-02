@@ -3,10 +3,12 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { 
   Search, TrendingUp, TrendingDown, Activity, BarChart3, Calendar, BarChart2, 
   LineChart as LineChartIcon, Building2, DollarSign, PieChart, Briefcase, 
-  Target, TrendingUp as Growth, Landmark, Users, Globe
+  Target, TrendingUp as Growth, Landmark, Users, Globe, Bell
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart } from 'recharts';
-import api from '../services/api';
+import api, { alerts as alertsApi } from '../services/api';
+import AlertModal from '../components/AlertModal';
+import AlertsList from '../components/AlertsList';
 import '../styles/MarketView.css';
 
 // Custom Candlestick Shape Component
@@ -105,6 +107,8 @@ const MarketView = () => {
   const [chartType, setChartType] = useState('area'); // 'area' or 'candlestick'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [showAlertsList, setShowAlertsList] = useState(false);
 
   // Load symbol and asset type from URL parameters
   useEffect(() => {
@@ -219,6 +223,17 @@ const MarketView = () => {
     }
   };
 
+  const handleCreateAlert = async (alertData) => {
+    try {
+      await alertsApi.create(alertData);
+      // Optionally show a success message
+      alert(`Alert created successfully for ${alertData.symbol}!`);
+    } catch (error) {
+      console.error('Failed to create alert:', error);
+      throw error;
+    }
+  };
+
   const formatCurrency = (value, compact = false) => {
     if (compact) {
       // For large numbers (market cap, revenue, etc.)
@@ -285,21 +300,36 @@ const MarketView = () => {
             <div className="quote-symbol-section">
               <h1 className="quote-symbol">{quote.symbol}</h1>
               <span className="quote-name">{quote.name}</span>
-              <Link 
-                to={`/technical?symbol=${quote.symbol}`} 
-                className="btn btn-secondary"
-                style={{ 
-                  marginLeft: '1rem', 
-                  fontSize: '0.875rem',
-                  padding: '0.5rem 1rem',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}
-              >
-                <BarChart2 size={16} />
-                Technical Analysis
-              </Link>
+              <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                <Link 
+                  to={`/technical?symbol=${quote.symbol}`} 
+                  className="btn btn-secondary"
+                  style={{ 
+                    fontSize: '0.875rem',
+                    padding: '0.5rem 1rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <BarChart2 size={16} />
+                  Technical Analysis
+                </Link>
+                <button
+                  onClick={() => setShowAlertModal(true)}
+                  className="btn btn-primary"
+                  style={{ 
+                    fontSize: '0.875rem',
+                    padding: '0.5rem 1rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <Bell size={16} />
+                  Set Alert
+                </button>
+              </div>
             </div>
             <div className="quote-price-section">
               <div className="current-price">{formatCurrency(quote.price)}</div>
@@ -908,6 +938,38 @@ const MarketView = () => {
           <h3>Search for a Symbol</h3>
           <p>Enter a stock, crypto, bond, or commodity symbol to view live market data</p>
         </div>
+      )}
+
+      {/* Alerts Section */}
+      {quote && !loading && (
+        <div style={{ marginTop: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.5rem', margin: 0 }}>
+              <Bell size={24} />
+              Your Alerts
+            </h2>
+            <button
+              onClick={() => setShowAlertModal(true)}
+              className="btn btn-primary"
+              style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+            >
+              <Bell size={16} style={{ marginRight: '0.5rem' }} />
+              Create Alert
+            </button>
+          </div>
+          <AlertsList symbol={symbol} />
+        </div>
+      )}
+
+      {/* Alert Modal */}
+      {quote && (
+        <AlertModal
+          isOpen={showAlertModal}
+          onClose={() => setShowAlertModal(false)}
+          symbol={symbol}
+          currentPrice={quote.price}
+          onCreateAlert={handleCreateAlert}
+        />
       )}
     </div>
   );
