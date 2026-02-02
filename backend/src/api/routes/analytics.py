@@ -2,6 +2,7 @@
 
 from typing import Optional, List, Dict
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from datetime import date
 import yfinance as yf
@@ -536,6 +537,16 @@ async def get_comprehensive_risk_analysis(
     from decimal import Decimal
     import numpy as np
     import pandas as pd
+    import math
+    
+    def sanitize_for_json(value):
+        """Convert NaN, inf values to None for JSON serialization."""
+        if value is None:
+            return None
+        if isinstance(value, float):
+            if math.isnan(value) or math.isinf(value):
+                return None
+        return value
     
     try:
         portfolio = db.query(Portfolio).get(portfolio_id)
@@ -631,8 +642,8 @@ async def get_comprehensive_risk_analysis(
                     holdings_risk.append({
                         "symbol": holding.ticker,
                         "asset_type": holding.asset_type.value,
-                        "volatility_pct": round(volatility, 2),
-                        "beta": round(float(beta), 2) if beta else None,
+                        "volatility_pct": sanitize_for_json(round(volatility, 2) if not math.isnan(volatility) else None),
+                        "beta": sanitize_for_json(round(float(beta), 2) if beta and not math.isnan(float(beta)) else None),
                         "weight_pct": round(pct_of_portfolio, 2),
                         "value": round(holding_value, 2)
                     })
@@ -672,7 +683,8 @@ async def get_comprehensive_risk_analysis(
                     portfolio_returns += historical_returns[holding.ticker] * weight
             
             # Portfolio volatility
-            portfolio_volatility = float(portfolio_returns.std() * np.sqrt(252) * 100)
+            vol_value = float(portfolio_returns.std() * np.sqrt(252) * 100)
+            portfolio_volatility = sanitize_for_json(vol_value)
             
             # Calculate diversification score (0-100, higher is better)
             # Based on: average correlation, number of holdings, sector concentration
@@ -716,63 +728,66 @@ async def get_comprehensive_risk_analysis(
         # Calculate concentration ratio (sum of top 5)
         concentration_ratio = sum(h['weight_pct'] for h in top_holdings)
         
-        return {
-            "portfolio_id": portfolio_id,
-            "portfolio_name": portfolio.name,
-            "total_value": round(total_value, 2),
-            "analysis_date": date.today().isoformat(),
-            
-            # Allocation Data
-            "sector_allocation": [
-                {"sector": sector, "percentage": round(pct, 2)}
-                for sector, pct in sorted(sector_allocation.items(), key=lambda x: x[1], reverse=True)
-            ],
-            "asset_allocation": [
-                {"asset_type": asset, "percentage": round(pct, 2)}
-                for asset, pct in sorted(asset_allocation.items(), key=lambda x: x[1], reverse=True)
-            ],
-            
-            # Individual Holdings Risk
-            "holdings_risk": holdings_risk,
-            
-            # Correlation Analysis
-            "correlation_matrix": correlation_matrix,
-            
-            # Portfolio-Level Metrics
-            "portfolio_metrics": {
-                "volatility_pct": round(portfolio_volatility, 2) if portfolio_volatility else None,
-                "beta": round(portfolio_beta, 2) if portfolio_beta else None,
-                "diversification_score": round(diversification_score, 1),
-                "number_of_holdings": len(holdings),
-                "number_of_sectors": len(sector_allocation),
-                "concentration_ratio": round(concentration_ratio, 2)
-            },
-            
-            # Concentration Risk
-            "top_holdings": top_holdings,
-            
-            # Risk Assessment
-            "risk_assessment": {
-                "diversification": (
-                    "Excellent" if diversification_score >= 80 else
-                    "Good" if diversification_score >= 60 else
-                    "Moderate" if diversification_score >= 40 else
-                    "Poor"
-                ),
-                "concentration": (
-                    "Low Risk" if concentration_ratio < 30 else
-                    "Moderate Risk" if concentration_ratio < 50 else
-                    "High Risk" if concentration_ratio < 70 else
-                    "Very High Risk"
-                ),
-                "volatility": (
-                    "Low" if portfolio_volatility and portfolio_volatility < 15 else
-                    "Moderate" if portfolio_volatility and portfolio_volatility < 25 else
-                    "High" if portfolio_volatility else
-                    "Unknown"
-                )
+        return JSONResponse(
+            status_code=200,
+            content={
+                "portfolio_id": portfolio_id,
+                "portfolio_name": portfolio.name,
+                "total_value": round(total_value, 2),
+                "analysis_date": date.today().isoformat(),
+                
+                # Allocation Data
+                "sector_allocation": [
+                    {"sector": sector, "percentage": round(pct, 2)}
+                    for sector, pct in sorted(sector_allocation.items(), key=lambda x: x[1], reverse=True)
+                ],
+                "asset_allocation": [
+                    {"asset_type": asset, "percentage": round(pct, 2)}
+                    for asset, pct in sorted(asset_allocation.items(), key=lambda x: x[1], reverse=True)
+                ],
+                
+                # Individual Holdings Risk
+                "holdings_risk": holdings_risk,
+                
+                # Correlation Analysis
+                "correlation_matrix": correlation_matrix,
+                
+                # Portfolio-Level Metrics
+                "portfolio_metrics": {
+                    "volatility_pct": sanitize_for_json(round(portfolio_volatility, 2) if portfolio_volatility is not None else None),
+                    "beta": sanitize_for_json(round(portfolio_beta, 2) if portfolio_beta is not None else None),
+                    "diversification_score": sanitize_for_json(round(diversification_score, 1)),
+                    "number_of_holdings": len(holdings),
+                    "number_of_sectors": len(sector_allocation),
+                    "concentration_ratio": round(concentration_ratio, 2)
+                },
+                
+                # Concentration Risk
+                "top_holdings": top_holdings,
+                
+                # Risk Assessment
+                "risk_assessment": {
+                    "diversification": (
+                        "Excellent" if diversification_score >= 80 else
+                        "Good" if diversification_score >= 60 else
+                        "Moderate" if diversification_score >= 40 else
+                        "Poor"
+                    ),
+                    "concentration": (
+                        "Low Risk" if concentration_ratio < 30 else
+                        "Moderate Risk" if concentration_ratio < 50 else
+                        "High Risk" if concentration_ratio < 70 else
+                        "Very High Risk"
+                    ),
+                    "volatility": (
+                        "Low" if portfolio_volatility and portfolio_volatility < 15 else
+                        "Moderate" if portfolio_volatility and portfolio_volatility < 25 else
+                        "High" if portfolio_volatility else
+                        "Unknown"
+                    )
+                }
             }
-        }
+        )
         
     except HTTPException:
         raise
