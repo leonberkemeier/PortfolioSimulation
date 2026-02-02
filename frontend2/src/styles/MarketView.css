@@ -361,10 +361,22 @@
 
   .quote-header {
     flex-direction: column;
+    gap: 1rem;
+  }
+
+  .quote-symbol-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .quote-symbol {
+    font-size: 1.75rem;
   }
 
   .quote-price-section {
     text-align: left;
+    width: 100%;
   }
 
   .price-change {
@@ -375,23 +387,184 @@
     font-size: 2rem;
   }
 
-  .quote-symbol {
-    font-size: 1.5rem;
+  .time-range-selector {
+    gap: 0.375rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
 
-  .time-range-selector {
-    gap: 0.25rem;
+  .time-range-selector::-webkit-scrollbar {
+    display: none;
   }
 
   .range-btn {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.75rem;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
   }
 
   .market-stats {
     grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .stat-card {
+    padding: 0.875rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  .stat-value {
+    font-size: 1rem;
+  }
+
+  .search-section {
+    flex-direction: column;
+  }
+
+  .market-search {
+    min-width: 100%;
+  }
+
+  .asset-type-selector {
+    width: 100%;
+  }
+
+  /* Chart adjustments */
+  .chart-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .chart-wrapper {
+    margin-left: -1rem;
+    margin-right: -1rem;
+  }
+
+  .chart-type-toggle {
+    gap: 0.375rem;
+  }
+
+  .toggle-btn {
+    padding: 0.5rem;
+  }
+
+  /* Fundamentals mobile */
+  .fundamentals-section {
+    padding: 1.5rem 1rem;
+    margin-top: 2rem;
+  }
+  
+  .fundamentals-header h2 {
+    font-size: 1.5rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .fundamentals-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .fundamental-group {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .fundamental-group-header {
+    gap: 0.5rem;
+  }
+
+  .fundamental-group-header h3 {
+    font-size: 1.125rem;
+  }
+  
+  .fundamentals-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .fundamental-card {
+    padding: 0.875rem;
+  }
+
+  .fundamental-icon {
+    min-width: 32px;
+    height: 32px;
+  }
+
+  .fundamental-label {
+    font-size: 0.75rem;
+  }
+
+  .fundamental-value {
+    font-size: 1rem;
   }
 }
+
+/* Small Mobile */
+@media (max-width: 480px) {
+  .market-view {
+    padding: 0.75rem;
+  }
+
+  .quote-header {
+    padding: 1rem;
+    margin: -0.75rem -0.75rem 1rem;
+  }
+
+  .quote-symbol {
+    font-size: 1.5rem;
+  }
+
+  .current-price {
+    font-size: 1.75rem;
+  }
+
+  .price-change {
+    font-size: 0.875rem;
+  }
+
+  .time-range-selector {
+    margin: 0 -0.75rem;
+    padding: 0 0.75rem;
+  }
+
+  .range-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .market-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-header h3 {
+    font-size: 1rem;
+  }
+
+  .chart-subtitle {
+    font-size: 0.75rem;
+  }
+
+  .fundamentals-section {
+    padding: 1rem 0.75rem;
+  }
+
+  .fundamentals-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .fundamental-group {
+    padding: 0.875rem;
+  }
+
+  .fundamental-card {
+    padding: 0.75rem;
+  }
+}
+
 
 /* Fundamentals Section */
 .fundamentals-section {
