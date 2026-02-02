@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, DollarSign, Activity, PieChart, BarChart3, ShoppingCart, X } from 'lucide-react';
+import { ArrowLeft, TrendingUp, DollarSign, Activity, PieChart, BarChart3, ShoppingCart, X, Shield } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { portfolios } from '../services/api';
 import '../styles/PortfolioDetail.css';
@@ -241,6 +241,14 @@ export default function PortfolioDetail() {
               {portfolio.model_name || 'Manual'}
             </div>
             <div className="badge active">Active</div>
+            <button
+              className="risk-analysis-btn"
+              onClick={() => navigate(`/portfolio/${id}/risk`)}
+              title="View Risk Analysis"
+            >
+              <Shield size={18} />
+              Risk Analysis
+            </button>
           </div>
         </div>
 

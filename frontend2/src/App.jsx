@@ -9,6 +9,7 @@ import AssetReference from './pages/AssetReference';
 import MarketView from './pages/MarketView';
 import TechnicalAnalysis from './pages/TechnicalAnalysis';
 import ChartComparison from './pages/ChartComparison';
+import PortfolioRiskDashboard from './pages/PortfolioRiskDashboard';
 import './styles/global.css';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
           <Route path="/compare" element={<ChartComparison />} />
           <Route path="/technical" element={<TechnicalAnalysis />} />
           <Route path="/portfolio/:id" element={<PortfolioDetail />} />
+          <Route path="/portfolio/:id/risk" element={<PortfolioRiskDashboard />} />
           <Route path="/trade/:id" element={<TradingInterface />} />
           <Route path="/create-portfolio" element={<PortfolioCreationWizard />} />
           <Route path="/analytics/:id" element={<AnalyticsDashboard />} />
