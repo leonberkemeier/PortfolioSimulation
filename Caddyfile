@@ -1,18 +1,25 @@
-# Caddyfile for Trading Simulator Deployment
+# Caddyfile for Trading Simulator Deployment with Docker
 # Replace yourdomain.com with your actual domain
 
 yourdomain.com {
     # Frontend - Serve React app
-    root * /home/archy/Desktop/Server/FinancialData/Trading_Simulator/frontend2/dist
+    root * /var/www/trading-simulator/frontend/dist
     
     # Try files first, then fallback to index.html for SPA routing
     try_files {path} /index.html
     file_server
 
-    # Backend API - Reverse proxy to FastAPI
+    # Backend API - Reverse proxy to Docker container
     handle /api/* {
         reverse_proxy localhost:8001
     }
+
+    # WebSocket support (if needed in future)
+    @websockets {
+        header Connection *Upgrade*
+        header Upgrade websocket
+    }
+    reverse_proxy @websockets localhost:8001
 
     # Security headers
     header {

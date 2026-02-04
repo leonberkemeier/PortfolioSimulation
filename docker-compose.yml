@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trading-simulator-backend
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    volumes:
+      # Persist database
+      - ./backend/data:/app/data
+      # Mount financial data aggregator DB (adjust path as needed)
+      - /home/archy/Desktop/Server/FinancialData/financial_data_aggregator:/financial_data:ro
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - DATABASE_URL=sqlite:////app/data/trading_simulator.db
+      - FINANCIAL_DATA_DB_URL=sqlite:////financial_data/financial_data.db
+      - ACCESS_TOKEN_EXPIRE_MINUTES=10080
+      - API_HOST=0.0.0.0
+      - API_PORT=8001
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
