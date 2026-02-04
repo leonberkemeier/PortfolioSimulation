@@ -98,34 +98,46 @@ app.include_router(
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
     """Handle HTTP exceptions with consistent error format."""
-    return {
-        "status_code": exc.status_code,
-        "error": exc.detail,
-        "message": str(exc),
-        "details": None
-    }
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "status_code": exc.status_code,
+            "error": exc.detail,
+            "message": str(exc),
+            "details": None
+        }
+    )
 
 
 @app.exception_handler(ValueError)
 async def value_error_handler(request, exc):
     """Handle validation errors."""
-    return {
-        "status_code": 400,
-        "error": "Validation Error",
-        "message": str(exc),
-        "details": None
-    }
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=400,
+        content={
+            "status_code": 400,
+            "error": "Validation Error",
+            "message": str(exc),
+            "details": None
+        }
+    )
 
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request, exc):
     """Handle general exceptions."""
-    return {
-        "status_code": 500,
-        "error": "Internal Server Error",
-        "message": "An unexpected error occurred",
-        "details": str(exc) if str(exc) else None
-    }
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status_code": 500,
+            "error": "Internal Server Error",
+            "message": "An unexpected error occurred",
+            "details": str(exc) if str(exc) else None
+        }
+    )
 
 
 # ============ Startup/Shutdown ============
