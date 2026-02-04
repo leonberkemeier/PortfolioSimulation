@@ -6,6 +6,43 @@ from typing import Optional, List, Dict
 from pydantic import BaseModel, Field, validator
 
 
+# ============ Auth Schemas ============
+
+class UserRegisterRequest(BaseModel):
+    """Request to register a new user (admin only)."""
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=6, max_length=100)
+    full_name: Optional[str] = Field(None, max_length=100)
+    email: Optional[str] = Field(None, max_length=100)
+    is_superuser: Optional[bool] = Field(False)
+
+
+class UserLoginRequest(BaseModel):
+    """Request to login."""
+    username: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    """JWT token response."""
+    access_token: str
+    token_type: str = "bearer"
+
+
+class UserResponse(BaseModel):
+    """User information response."""
+    id: int
+    username: str
+    email: Optional[str]
+    full_name: Optional[str]
+    is_active: bool
+    is_superuser: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # ============ Portfolio Schemas ============
 
 class PortfolioCreateRequest(BaseModel):

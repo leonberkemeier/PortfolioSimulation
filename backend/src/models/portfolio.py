@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from sqlalchemy import Column, Integer, String, DateTime, Numeric, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Numeric, Enum, ForeignKey
 from sqlalchemy.orm import relationship
 import enum
 
@@ -17,6 +17,7 @@ class Portfolio(Base):
     __tablename__ = "portfolio"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
     description = Column(String(500), nullable=True)
     initial_capital = Column(Numeric(15, 2), nullable=False)  # Total budget to manage
@@ -29,6 +30,7 @@ class Portfolio(Base):
     model_name = Column(String(100), nullable=True)  # Linear, CNN, XGBoost, LLM, or None for manual
 
     # Relationships
+    user = relationship("User", back_populates="portfolios")
     holdings = relationship("Holding", back_populates="portfolio", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="portfolio", cascade="all, delete-orphan")
     snapshots = relationship("PortfolioSnapshot", back_populates="portfolio", cascade="all, delete-orphan")

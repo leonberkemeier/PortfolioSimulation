@@ -26,5 +26,10 @@ LOG_FILE = LOG_DIR / "trading_simulator.log"
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", 8000))
 
+# Authentication
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production-please-make-it-secure")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24 * 7))  # 7 days
+
 # Feature flags
 ENABLE_CORS = os.getenv("ENABLE_CORS", "true").lower() == "true"

@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BarChart3, Layers, Plus, TrendingUp, Zap, LineChart, Book, Activity, BarChart2, Menu, X, GitCompare, Info } from 'lucide-react';
+import { BarChart3, Layers, Plus, TrendingUp, Zap, LineChart, Book, Activity, BarChart2, Menu, X, GitCompare, Info, LogOut, User } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import '../styles/Layout.css';
 
 export default function Layout() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   const navItems = [
     { path: '/dashboard', icon: BarChart3, label: 'Dashboard' },
@@ -89,6 +91,26 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="sidebar-footer">
+          {/* User Info */}
+          {user && (
+            <div className="sidebar-footer-card mb-3">
+              <div className="footer-title">
+                <User size={16} />
+                <span>{user.username}</span>
+              </div>
+              {user.full_name && (
+                <p className="footer-text">{user.full_name}</p>
+              )}
+              <button
+                onClick={logout}
+                className="mt-2 w-full flex items-center gap-2 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+              >
+                <LogOut size={14} />
+                <span className="text-sm">Sign Out</span>
+              </button>
+            </div>
+          )}
+          
           <div className="sidebar-footer-card">
             <div className="footer-title">
               <TrendingUp size={16} />

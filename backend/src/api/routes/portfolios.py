@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 
 from ...database import get_db
-from ...models import Portfolio, FeeStructure, PortfolioFeeAssignment, PortfolioStatus
+from ...models import Portfolio, FeeStructure, PortfolioFeeAssignment, PortfolioStatus, User
+from ...utils.auth import get_current_user
 from ..schemas import (
     PortfolioCreateRequest, PortfolioUpdateRequest, PortfolioResponse,
     PortfolioListResponse
@@ -25,11 +26,13 @@ router = APIRouter()
 )
 async def create_portfolio(
     request: PortfolioCreateRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Create a new portfolio with initial capital and constraints."""
     # Create portfolio
     portfolio = Portfolio(
+        user_id=current_user.id,
         name=request.name,
         description=request.description,
         initial_capital=Decimal(request.initial_capital),
@@ -74,10 +77,11 @@ async def list_portfolios(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
     status_filter: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Get list of all portfolios with pagination."""
-    query = db.query(Portfolio)
+    query = db.query(Portfolio).filter(Portfolio.user_id == current_user.id)
 
     if status_filter:
         query = query.filter(Portfolio.status == status_filter)
@@ -104,10 +108,14 @@ async def list_portfolios(
 )
 async def get_portfolio(
     portfolio_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Get detailed information about a specific portfolio."""
-    portfolio = db.query(Portfolio).get(portfolio_id)
+    portfolio = db.query(Portfolio).filter(
+        Portfolio.id == portfolio_id,
+        Portfolio.user_id == current_user.id
+    ).first()
     if not portfolio:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -127,10 +135,14 @@ async def get_portfolio(
 async def update_portfolio(
     portfolio_id: int,
     request: PortfolioUpdateRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Update portfolio settings (name, limits, etc.)."""
-    portfolio = db.query(Portfolio).get(portfolio_id)
+    portfolio = db.query(Portfolio).filter(
+        Portfolio.id == portfolio_id,
+        Portfolio.user_id == current_user.id
+    ).first()
     if not portfolio:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -164,10 +176,14 @@ async def update_portfolio(
 )
 async def delete_portfolio(
     portfolio_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Archive a portfolio (mark as deleted, don't actually delete data)."""
-    portfolio = db.query(Portfolio).get(portfolio_id)
+    portfolio = db.query(Portfolio).filter(
+        Portfolio.id == portfolio_id,
+        Portfolio.user_id == current_user.id
+    ).first()
     if not portfolio:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

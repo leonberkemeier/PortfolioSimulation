@@ -11,6 +11,13 @@ alembic>=1.12.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
 
+# Authentication
+python-jose[cryptography]>=3.3.0
+passlib>=1.7.4
+bcrypt==4.0.1
+python-multipart>=0.0.6
+email-validator>=2.0.0
+
 # Database Drivers
 # sqlite3 is included with Python, no need to install
 

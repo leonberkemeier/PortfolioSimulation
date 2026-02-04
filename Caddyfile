@@ -1,0 +1,44 @@
+# Caddyfile for Trading Simulator Deployment
+# Replace yourdomain.com with your actual domain
+
+yourdomain.com {
+    # Frontend - Serve React app
+    root * /home/archy/Desktop/Server/FinancialData/Trading_Simulator/frontend2/dist
+    
+    # Try files first, then fallback to index.html for SPA routing
+    try_files {path} /index.html
+    file_server
+
+    # Backend API - Reverse proxy to FastAPI
+    handle /api/* {
+        reverse_proxy localhost:8001
+    }
+
+    # Security headers
+    header {
+        # Prevent clickjacking
+        X-Frame-Options "DENY"
+        # Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+        # Enable XSS protection
+        X-XSS-Protection "1; mode=block"
+        # Referrer policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # Remove server header
+        -Server
+    }
+
+    # Enable gzip compression
+    encode gzip
+
+    # Logging
+    log {
+        output file /var/log/caddy/trading-simulator.log
+        format json
+    }
+}
+
+# Optional: Redirect www to non-www
+www.yourdomain.com {
+    redir https://yourdomain.com{uri} permanent
+}

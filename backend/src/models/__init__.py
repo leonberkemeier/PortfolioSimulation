@@ -1,3 +1,4 @@
+from .user import User
 from .portfolio import Portfolio, PortfolioStatus
 from .transaction import Holding, Transaction, AssetType, OrderType, OrderStatus
 from .fee_structure import FeeStructure, PortfolioFeeAssignment, FeeType
@@ -6,6 +7,7 @@ from .signals_and_risk import ModelSignal, RiskMetric
 from .alert import PriceAlert, AlertCondition, AlertStatus
 
 __all__ = [
+    "User",
     "Portfolio",
     "PortfolioStatus",
     "Holding",

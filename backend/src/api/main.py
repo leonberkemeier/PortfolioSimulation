@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..database import SessionLocal, get_db
 from .schemas import HealthCheckResponse, ErrorResponse
-from .routes import portfolios, orders, analytics, live_trading, alerts
+from .routes import portfolios, orders, analytics, live_trading, alerts, auth
 
 # Create FastAPI app
 app = FastAPI(
@@ -56,6 +56,12 @@ async def health_check():
 
 
 # ============ Include Routes ============
+
+app.include_router(
+    auth.router,
+    prefix="/api/auth",
+    tags=["Authentication"]
+)
 
 app.include_router(
     portfolios.router,
