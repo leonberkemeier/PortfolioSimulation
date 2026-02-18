@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..database import SessionLocal, get_db
 from .schemas import HealthCheckResponse, ErrorResponse
-from .routes import portfolios, orders, analytics, live_trading, alerts, auth
+from .routes import portfolios, orders, analytics, live_trading, alerts, auth, signals, models, screener
 
 # Create FastAPI app
 app = FastAPI(
@@ -91,6 +91,24 @@ app.include_router(
     alerts.router,
     prefix="/api/alerts",
     tags=["Alerts"]
+)
+
+app.include_router(
+    signals.router,
+    prefix="/api/signals",
+    tags=["Model Signals"]
+)
+
+app.include_router(
+    models.router,
+    prefix="/api/models",
+    tags=["Model Analytics"]
+)
+
+app.include_router(
+    screener.router,
+    prefix="/api/screener",
+    tags=["Stock Screener"]
 )
 
 # ============ Error Handlers ============

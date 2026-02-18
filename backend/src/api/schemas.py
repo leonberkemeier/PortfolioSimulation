@@ -293,6 +293,190 @@ class ModelComparisonResponse(BaseModel):
     date: date
 
 
+# ============ Signal Execution Schemas ============
+
+class TradeSignalItem(BaseModel):
+    """A single trade signal from model_regime_comparison."""
+    ticker: str = Field(..., min_length=1, max_length=20)
+    signal_type: str = Field(..., pattern="^(BUY|SELL|HOLD)$")
+    model_name: str = Field(..., min_length=1, max_length=100)
+    date: str  # ISO format date
+    
+    # Position sizing
+    suggested_weight: float = Field(..., ge=0, le=1)
+    suggested_quantity: Optional[int] = None
+    
+    # Quality metrics
+    score: float = Field(..., ge=0, le=100)
+    ev: float  # Expected value
+    p_win: float = Field(..., ge=0, le=1)
+    confidence: float = Field(..., ge=0, le=1)
+    kelly_fraction: float
+    
+    # Context
+    reason: str
+    current_price: Optional[float] = None
+    asset_type: Optional[str] = Field("stock", pattern="^(stock|crypto|bond|commodity)$")
+
+
+class ExecuteSignalsRequest(BaseModel):
+    """Request to execute multiple trade signals."""
+    signals: List[TradeSignalItem]
+    dry_run: bool = False  # If True, simulate without executing
+
+
+class SignalExecutionResult(BaseModel):
+    """Result of a single signal execution."""
+    ticker: str
+    signal_type: str
+    success: bool
+    order_id: Optional[int] = None
+    quantity: Optional[float] = None
+    price: Optional[float] = None
+    total_cost: Optional[float] = None
+    message: str
+    error: Optional[str] = None
+
+
+class ExecuteSignalsResponse(BaseModel):
+    """Response from executing signals."""
+    portfolio_id: int
+    model_name: str
+    total_signals: int
+    executed: int
+    failed: int
+    skipped: int
+    results: List[SignalExecutionResult]
+    portfolio_nav_after: Optional[float] = None
+    timestamp: datetime
+
+
+class OpportunitySummaryRequest(BaseModel):
+    """Request to get opportunity summary without executing."""
+    scores: List[Dict]  # Raw score data
+    model_name: str
+
+
+class OpportunitySummaryResponse(BaseModel):
+    """Summary of available opportunities."""
+    status: str
+    total_scores: int
+    positive_ev_count: int
+    qualified_opportunities: int
+    best_ev: float
+    avg_ev: float
+    recommendation: str  # "trade" or "wait"
+    model_name: str
+    date: str
+
+
+# ============ Model Analytics Schemas ============
+
+class SignalHistoryItem(BaseModel):
+    """A single signal from history."""
+    id: int
+    ticker: str
+    signal_type: str
+    confidence: float
+    model_name: str
+    timestamp: datetime
+    signal_metadata: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TradeOutcome(BaseModel):
+    """Outcome of a trade (buy then sell)."""
+    ticker: str
+    buy_price: float
+    sell_price: float
+    quantity: float
+    pnl: float
+    pnl_pct: float
+    holding_days: int
+    is_winner: bool
+
+
+class ModelAnalyticsResponse(BaseModel):
+    """Comprehensive analytics for a model."""
+    model_name: str
+    portfolio_id: Optional[int] = None
+    portfolio_exists: bool
+    
+    # Portfolio metrics
+    nav: Optional[float] = None
+    total_return_pct: Optional[float] = None
+    initial_capital: Optional[float] = None
+    current_cash: Optional[float] = None
+    deployed_capital: Optional[float] = None
+    
+    # Signal statistics
+    total_signals: int = 0
+    buy_signals: int = 0
+    sell_signals: int = 0
+    hold_signals: int = 0
+    avg_confidence: Optional[float] = None
+    
+    # Trade statistics
+    total_trades: int = 0
+    winning_trades: int = 0
+    losing_trades: int = 0
+    win_rate: Optional[float] = None
+    avg_win_pct: Optional[float] = None
+    avg_loss_pct: Optional[float] = None
+    profit_factor: Optional[float] = None  # gross profit / gross loss
+    
+    # Position info
+    current_positions: int = 0
+    position_tickers: List[str] = []
+    
+    # Recent activity
+    recent_signals: List[SignalHistoryItem] = []
+    recent_trades: List[TradeOutcome] = []
+    
+    # Time info
+    first_signal_date: Optional[datetime] = None
+    last_signal_date: Optional[datetime] = None
+    portfolio_age_days: Optional[int] = None
+
+
+class ModelComparisonSummary(BaseModel):
+    """Summary for comparing multiple models."""
+    models: List[ModelAnalyticsResponse]
+    total_models: int
+    best_performer: Optional[str] = None  # model_name with highest return
+    highest_win_rate: Optional[str] = None  # model_name with best win rate
+    most_active: Optional[str] = None  # model_name with most trades
+    timestamp: datetime
+
+
+# ============ Screener Schemas ============
+
+class ScreenerOpportunity(BaseModel):
+    """A single screener opportunity."""
+    ticker: str
+    category: str  # dividend, volatility, combined
+    dividend_yield: Optional[float] = None
+    volatility_percentile: Optional[float] = None
+    historical_volatility: Optional[float] = None
+    pe_ratio: Optional[float] = None
+    market_cap: Optional[float] = None
+    last_updated: Optional[str] = None
+
+
+class ScreenerStatsResponse(BaseModel):
+    """Screener statistics and opportunities."""
+    dividend_opportunities: List[ScreenerOpportunity]
+    volatility_opportunities: List[ScreenerOpportunity]
+    combined_opportunities: List[ScreenerOpportunity]
+    dividend_count: int
+    volatility_count: int
+    combined_count: int
+    last_scan_date: Optional[str] = None
+    status: str
+
+
 # ============ Health Check ============
 
 class HealthCheckResponse(BaseModel):

@@ -60,4 +60,25 @@ export const analytics = {
     api.post(`/analytics/${portfolioId}/metrics`, { metric_date: date }),
 };
 
+// ============ Model Analytics ============
+export const models = {
+  list: () => api.get('/models'),
+  analytics: (modelName, recentLimit = 10) =>
+    api.get(`/models/${modelName}/analytics`, { params: { recent_limit: recentLimit } }),
+  comparison: () => api.get('/models/comparison'),
+  signals: (modelName, skip = 0, limit = 50) =>
+    api.get(`/models/${modelName}/signals`, { params: { skip, limit } }),
+  trades: (modelName, limit = 50) =>
+    api.get(`/models/${modelName}/trades`, { params: { limit } }),
+};
+
+// ============ Stock Screener ============
+export const screener = {
+  stats: (params = {}) => api.get('/screener/stats', { params }),
+  dividend: (params = {}) => api.get('/screener/dividend', { params }),
+  volatility: (params = {}) => api.get('/screener/volatility', { params }),
+  tickers: (limit = 500) => api.get('/screener/tickers', { params: { limit } }),
+  health: () => api.get('/screener/health'),
+};
+
 export default api;
