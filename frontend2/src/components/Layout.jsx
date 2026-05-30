@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BarChart3, Layers, Plus, TrendingUp, Zap, LineChart, Book, Activity, BarChart2, Menu, X, GitCompare, Info, LogOut, User } from 'lucide-react';
+import { BarChart3, Layers, Plus, TrendingUp, Zap, LineChart, Book, Activity, BarChart2, Menu, X, GitCompare, Info, LogOut, User, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/Layout.css';
 
@@ -18,6 +18,7 @@ export default function Layout() {
     { path: '/info', icon: Info, label: 'Project Info' },
     { path: '/models', icon: Layers, label: 'Models' },
     { path: '/create-portfolio', icon: Plus, label: 'New Portfolio' },
+    { path: '/risk-profile', icon: Shield, label: 'Risk Assessment' },
   ];
 
   const closeMobileMenu = () => {

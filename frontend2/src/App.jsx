@@ -13,6 +13,7 @@ import TechnicalAnalysis from './pages/TechnicalAnalysis';
 import ChartComparison from './pages/ChartComparison';
 import PortfolioRiskDashboard from './pages/PortfolioRiskDashboard';
 import ProjectInfo from './pages/ProjectInfo';
+import RiskAssessment from './pages/RiskAssessment';
 import Login from './pages/Login';
 import './styles/global.css';
 
@@ -44,6 +45,7 @@ function App() {
             <Route path="/analytics/:id" element={<AnalyticsDashboard />} />
             <Route path="/assets" element={<AssetReference />} />
             <Route path="/info" element={<ProjectInfo />} />
+            <Route path="/risk-profile" element={<RiskAssessment />} />
             {/* Placeholder routes for future pages */}
             <Route path="/models" element={<Dashboard />} />
           </Route>

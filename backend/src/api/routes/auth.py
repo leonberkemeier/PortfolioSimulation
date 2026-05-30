@@ -18,7 +18,8 @@ from ..schemas import (
     UserRegisterRequest,
     UserLoginRequest,
     TokenResponse,
-    UserResponse
+    UserResponse,
+    RiskProfileRequest,
 )
 
 router = APIRouter()
@@ -147,3 +148,27 @@ async def delete_user(
 async def logout():
     """Logout (client should discard token)."""
     return {"message": "Successfully logged out"}
+
+
+@router.get("/risk-profile")
+async def get_risk_profile(
+    current_user: User = Depends(get_current_user)
+):
+    """Return the current user's saved risk profile ID (1–5), or null if not yet assessed."""
+    return {
+        "risk_profile_id": current_user.risk_profile_id,
+        "username": current_user.username,
+    }
+
+
+@router.post("/risk-profile", response_model=UserResponse)
+async def save_risk_profile(
+    payload: RiskProfileRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Save the result of the user's risk assessment questionnaire."""
+    current_user.risk_profile_id = payload.profile_id
+    db.commit()
+    db.refresh(current_user)
+    return current_user

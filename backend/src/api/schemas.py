@@ -29,6 +29,13 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class RiskProfileRequest(BaseModel):
+    """Request to save a user's risk profile result."""
+    profile_id: int = Field(..., ge=1, le=5,
+                            description="1=Conservative, 2=Mod.Conservative, 3=Moderate, "
+                                        "4=Mod.Aggressive, 5=Aggressive")
+
+
 class UserResponse(BaseModel):
     """User information response."""
     id: int
@@ -37,6 +44,7 @@ class UserResponse(BaseModel):
     full_name: Optional[str]
     is_active: bool
     is_superuser: bool
+    risk_profile_id: Optional[int] = None
     created_at: datetime
 
     class Config:
