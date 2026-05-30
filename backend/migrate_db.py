@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.database import Base, engine, init_db
-from src.models import User, Portfolio
+from src.models import User, Portfolio, AIModelPortfolio
 
 def migrate_database():
     """Create or update database tables."""

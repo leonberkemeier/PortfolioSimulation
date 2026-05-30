@@ -1,5 +1,6 @@
 from .user import User
 from .portfolio import Portfolio, PortfolioStatus
+from .ai_portfolio import AIModelPortfolio
 from .transaction import Holding, Transaction, AssetType, OrderType, OrderStatus
 from .fee_structure import FeeStructure, PortfolioFeeAssignment, FeeType
 from .performance import PortfolioSnapshot, PerformanceMetric
@@ -25,5 +26,6 @@ __all__ = [
     "PriceAlert",
     "AlertCondition",
     "AlertStatus",
+    "AIModelPortfolio",
 ]
 

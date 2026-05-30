@@ -485,6 +485,40 @@ class ScreenerStatsResponse(BaseModel):
     status: str
 
 
+# ============ AI Model Portfolio Schemas ============
+
+class AIPortfolioPosition(BaseModel):
+    """A single position in an AI-built model portfolio."""
+    ticker: str
+    weight: float  # 0.0 – 1.0
+
+
+class AIPortfolioModel(BaseModel):
+    """One model portfolio for a single risk profile (sent by the AI PC)."""
+    profile_id: int = Field(..., ge=1, le=5)
+    profile_name: str
+    execution_date: str
+    positions: List[AIPortfolioPosition]
+
+
+class GreenfieldModelsPayload(BaseModel):
+    """Full payload from the AI PC — 5 model portfolios for all risk profiles."""
+    execution_date: str
+    models: List[AIPortfolioModel]
+
+
+class AIPortfolioResponse(BaseModel):
+    """The AI model portfolio assigned to the current user."""
+    profile_id: int
+    profile_name: str
+    execution_date: str
+    positions: List[AIPortfolioPosition]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # ============ Health Check ============
 
 class HealthCheckResponse(BaseModel):

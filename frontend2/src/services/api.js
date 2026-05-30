@@ -133,4 +133,9 @@ export const alerts = {
   },
 };
 
+// ============ AI Model Portfolio ============
+export const aiPortfolio = {
+  getMyPortfolio: () => api.get('/portfolio/my-ai-portfolio'),
+};
+
 export default api;
